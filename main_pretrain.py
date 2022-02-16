@@ -180,7 +180,7 @@ def main(args):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
         if misc.is_main_process():
-            _recon_validate(TRACK_TVX, model, table_key='last')
+            _recon_validate(TRACK_TVX, model, table_key='last',1)
             wandb.log({'epoch':epoch})
         misc.save_model(
             args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
