@@ -180,7 +180,7 @@ def main(args):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
         if misc.is_main_process():
-            _recon_validate(TRACK_TVX, model, table_key='last',1)
+            _recon_validate(TRACK_TVX, model, table_key='last')
             wandb.log({'epoch':epoch})
         misc.save_model(
             args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
@@ -203,7 +203,7 @@ def _recon_validate(TRACK_TVX, model, table_key='initial'):
     loss, output, _ = model(TRACK_TVX)
     recon_imgs = model.module.unpatchify(output)
     origi_imgs = TRACK_TVX
-    wandb_show16imgs(recon_imgs, origi_imgs, table_key=table_key, ds_ratio=args.ds_ratio)
+    wandb_show16imgs(recon_imgs, origi_imgs, table_key=table_key, ds_ratio=1)
           
                 
 if __name__ == '__main__':
