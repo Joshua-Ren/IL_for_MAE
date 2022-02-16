@@ -75,9 +75,6 @@ def get_args_parser():
                         help='epochs to warmup LR')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
-                        help='dataset path')
-
     parser.add_argument('--run_name',default=None,type=str)
     parser.add_argument('--proj_path',default='Interact_MAE', type=str)
     
@@ -154,7 +151,7 @@ def main(args):
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-    TRACK_TVX = wandb_gen_track_x(train_loader)
+    TRACK_TVX = wandb_gen_track_x(data_loader_train)
     TRACK_TVX = TRACK_TVX.cuda() 
     
     # ================== Create the model: mae ==================
