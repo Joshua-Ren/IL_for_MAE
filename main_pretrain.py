@@ -201,7 +201,7 @@ def _recon_validate(TRACK_TVX, model, table_key='initial'):
         then show the reconstruction and original figure on W&B
     '''
     loss, output, _ = model(TRACK_TVX)
-    recon_imgs = model.unpatchify(output)
+    recon_imgs = model.module.unpatchify(output)
     origi_imgs = TRACK_TVX
     wandb_show16imgs(recon_imgs, origi_imgs, table_key=table_key, ds_ratio=args.ds_ratio)
           
