@@ -21,7 +21,7 @@ from data_loader_lmdb import ImageFolderLMDB
 
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
@@ -128,7 +128,7 @@ def main(args):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     traindir = os.path.join('/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/', 'train.lmdb')
-    dataset_train = datasets.ImageFolderLMDB(traindir, transform=transform_train)
+    dataset_train = ImageFolderLMDB(traindir, transform=transform_train)
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
