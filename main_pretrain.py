@@ -24,6 +24,7 @@ import torch.backends.cudnn as cudnn
 #from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from einops import rearrange, repeat
 
 import timm
 
@@ -180,16 +181,27 @@ def main(args):
             data_loader_train.sampler.set_epoch(epoch)
         train_one_epoch(model, data_loader_train,
             optimizer, device, epoch, loss_scaler,
-            log_writer=log_writer,
             args=args)
         if epoch % 50 == 0 or epoch + 1 == args.epochs:
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)
         if misc.is_main_process():
-            _recon_validate(TRACK_TVX, model, table_key='last')
+            #_recon_validate(TRACK_TVX, model, table_key='last')
             wandb.log({'epoch':g})
-            
+
+# =================== Some utils functions ==========================
+def _recon_validate(TRACK_TVX, model, table_key='initial'):
+    '''
+        For image reconstruction, feed TRACK_TVX to the mae model
+        then show the reconstruction and original figure on W&B
+    '''
+    loss, recon_img_patches = model(TRACK_TVX)
+    recon_imgs = rearrange(recon_img_patches, 'b (h w) (p1 p2 c) -> b c (h p1) (w p2)', 
+                               h=args.patch_size,w=args.patch_size,c=3, p1=args.patch_num,p2=args.patch_num)
+    origi_imgs = TRACK_TVX
+    wandb_show16imgs(recon_imgs, origi_imgs, table_key=table_key, ds_ratio=args.ds_ratio)
+          
                 
 if __name__ == '__main__':
     args = get_args_parser()
