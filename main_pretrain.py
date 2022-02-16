@@ -150,6 +150,7 @@ def main(args):
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
         #base_folder = '/home/sg955/GitWS/IL_for_MAE/'
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
+        args.output_dir = save_path
         if not os.path.exists(save_path):
             os.makedirs(save_path)
     TRACK_TVX = wandb_gen_track_x(data_loader_train)
