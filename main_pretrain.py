@@ -179,6 +179,12 @@ def main(args):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
+        if misc.is_main_process():
+            _recon_validate(TRACK_TVX, model, table_key='last')
+            wandb.log({'epoch':epoch})
+        misc.save_model(
+            args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
+            loss_scaler=loss_scaler, epoch=epoch)        
         train_one_epoch(model, data_loader_train,
             optimizer, device, epoch, loss_scaler,
             args=args)
@@ -186,9 +192,7 @@ def main(args):
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)
-        if misc.is_main_process():
-            #_recon_validate(TRACK_TVX, model, table_key='last')
-            wandb.log({'epoch':g})
+
 
 # =================== Some utils functions ==========================
 def _recon_validate(TRACK_TVX, model, table_key='initial'):
@@ -196,9 +200,8 @@ def _recon_validate(TRACK_TVX, model, table_key='initial'):
         For image reconstruction, feed TRACK_TVX to the mae model
         then show the reconstruction and original figure on W&B
     '''
-    loss, recon_img_patches = model(TRACK_TVX)
-    recon_imgs = rearrange(recon_img_patches, 'b (h w) (p1 p2 c) -> b c (h p1) (w p2)', 
-                               h=args.patch_size,w=args.patch_size,c=3, p1=args.patch_num,p2=args.patch_num)
+    loss, output, _ = model(TRACK_TVX)
+    recon_imgs = model.unpatchify(output)
     origi_imgs = TRACK_TVX
     wandb_show16imgs(recon_imgs, origi_imgs, table_key=table_key, ds_ratio=args.ds_ratio)
           
