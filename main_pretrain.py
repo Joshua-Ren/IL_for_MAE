@@ -76,7 +76,7 @@ def get_args_parser():
 
     # Dataset parameters
     parser.add_argument('--run_name',default=None,type=str)
-    parser.add_argument('--proj_path',default='Interact_MAE', type=str)
+    parser.add_argument('--proj_name',default='Interact_MAE', type=str)
     
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
