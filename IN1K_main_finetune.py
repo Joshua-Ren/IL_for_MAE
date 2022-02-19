@@ -190,7 +190,6 @@ def main(args):
     # =================== Initialize wandb ========================
     if global_rank == 0:
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
-        os.makedirs(args.log_dir, exist_ok=True)
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
         args.output_dir = save_path
         if not os.path.exists(save_path):
