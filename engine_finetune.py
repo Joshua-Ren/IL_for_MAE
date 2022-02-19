@@ -89,7 +89,7 @@ def evaluate(data_loader, model, device):
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     if True:#misc.is_main_process():
-        wandb.log({'valid_loss':metric_logger.loss})
-        wandb.log({'valid_top1':metric_logger.acc1})
-        wandb.log({'valid_top5':metric_logger.acc5})
+        wandb.log({'valid_loss':metric_logger.meters['loss']})
+        wandb.log({'valid_top1':metric_logger.meters['acc1']})
+        wandb.log({'valid_top5':metric_logger.meters['acc5']})
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
