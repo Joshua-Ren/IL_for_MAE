@@ -17,7 +17,7 @@ import torch
 
 from timm.data import Mixup
 from timm.utils import accuracy
-from other_utils import *
+from otherutils import *
 import util.misc as misc
 import util.lr_sched as lr_sched
 
