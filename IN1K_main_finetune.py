@@ -312,8 +312,8 @@ def main(args):
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
             if False:
-                misc.save_modargs=args, model=model, model_without_ddp=model_without_ddp,
-                    optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
+                misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
+                optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
 
 if __name__ == '__main__':
     args = get_args_parser()
