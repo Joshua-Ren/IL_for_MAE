@@ -30,13 +30,13 @@ def build_dataset(is_train, args):
         pass
     elif args.dataset=='cifar100':
         train_T=T.Compose([
-                        T.RandomResizedCrop(256,scale=(0.05, 1.0)),
+                        T.RandomResizedCrop(224,scale=(0.05, 1.0)),
                         T.RandomHorizontalFlip(),
                         T.ToTensor(),
                         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
                         ])
         val_T =T.Compose([
-                        T.Resize(256),
+                        T.Resize(224),
                         T.ToTensor(),
                         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
                         ])
