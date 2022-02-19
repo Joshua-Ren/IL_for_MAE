@@ -26,6 +26,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler, max_norm: float = 0,
                     mixup_fn: Optional[Mixup] = None, args=None):
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     model.train(True)
     accum_iter = args.accum_iter
     optimizer.zero_grad()
@@ -55,11 +58,20 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()   
         torch.cuda.synchronize()
-        lr = optimizer.param_groups[0]["lr"]
-        loss_value_reduce = misc.all_reduce_mean(loss_value)              
-        if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
-            wandb.log({'loss':loss_value})
-            wandb.log({'learn_rate':lr})   
+        if data_iter_step%10 == 0:
+            prec1, prec5 = accuracy(outputs.data, targets, topk=(1, 5))
+            losses.update(loss.data.item(), samples.size(0))
+            top1.update(prec1.item(), samples.size(0))
+            top5.update(prec5.item(), samples.size(0))   
+            wandb.log({'loss':loss.item()})            
+                    
+    curr_lr = optimizer.param_groups[0]["lr"]
+    if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
+        wandb.log({'epoch':epoch})
+        wandb.log({'train_loss':losses.avg})
+        wandb.log({'train_top1':top1.avg})
+        wandb.log({'train_top5':top5.avg})
+        wandb.log({'learn_rate':curr_lr})
             
 @torch.no_grad()
 def evaluate(data_loader, model, device):
@@ -67,10 +79,6 @@ def evaluate(data_loader, model, device):
     top1 = AverageMeter()
     top5 = AverageMeter()
     criterion = torch.nn.CrossEntropyLoss()
-    #metric_logger = misc.MetricLogger(delimiter="  ")
-    #header = 'Test:'
-
-    # switch to evaluation mode
     model.eval()
 
     for i, (images,target) in enumerate(data_loader):
@@ -86,12 +94,6 @@ def evaluate(data_loader, model, device):
         top1.update(prec1.item(), images.size(0))
         top5.update(prec5.item(), images.size(0))
         
-        #batch_size = images.shape[0]
-        #metric_logger.update(loss=loss.item())
-        #metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
-        #metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
-    # gather the stats from all processes
-    #metric_logger.synchronize_between_processes()
     if misc.is_main_process():
         wandb.log({'valid_loss':losses.avg})
         wandb.log({'valid_top1':top1.avg})
