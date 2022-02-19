@@ -15,7 +15,7 @@ from torchvision import datasets
 import torchvision.transforms as T
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from data_loader_lmdb import ImageFolderLMDB
+from .data_loader_lmdb import ImageFolderLMDB
 
 
 def build_dataset_CIFAR100(is_train,args):
