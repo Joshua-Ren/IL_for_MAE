@@ -2,7 +2,7 @@
 #SBATCH -A NLP-CDT-SL2-GPU
 #SBATCH -p ampere
 #SBATCH --time=36:00:00
-#SBATCH --job-name=IN1K-finetune
+#SBATCH --job-name=CIF-finetune
 #SBATCH --output=./logs/test.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:4
@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_finetune.py --proj_name Finetune-CIFAR \
---run_name offi_smallDE400_ep300 --batch_size 384 --dataset cifar100 \
---finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth
+--run_name offi_smallDE400_ep400 --batch_size 384 --dataset cifar100 \
+--finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-400.pth

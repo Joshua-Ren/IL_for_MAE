@@ -188,7 +188,7 @@ def main(args):
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
     
     # =================== Initialize wandb ========================
-    if global_rank == 0:
+    if misc.is_main_process():
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
         args.output_dir = save_path
