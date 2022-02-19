@@ -73,7 +73,7 @@ def evaluate(data_loader, model, device):
     # switch to evaluation mode
     model.eval()
 
-    for i, (images,target) in enumerate(val_loader):
+    for i, (images,target) in enumerate(data_loader):
         images = images.to(device, non_blocking=True)
         target = target.to(device, non_blocking=True)
 
