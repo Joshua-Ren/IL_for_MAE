@@ -33,11 +33,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     accum_iter = args.accum_iter
     optimizer.zero_grad()
 
+    model.distill = True
+
     for data_iter_step, (samples, targets) in enumerate(data_loader):
-        print(samples.shape)
-        print(samples.type)
-        print(targets.shape)
-        print(targets.type)
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:
             lr_sched.adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, args)
@@ -48,7 +46,12 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
+            outputs, word_out = model(samples)
+
+            print(outputs.shape)
+            print(word_out.shape)
+
+            #outputs = model(samples)
             loss = criterion(outputs, targets)
         loss_value = loss.item()
 
