@@ -42,7 +42,11 @@ def build_dataset(is_train, args):
                         T.Resize(256),
                         T.ToTensor(),
                         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-                        ])                        
+                        ])
+        if is_train:
+            dataset = torchvision.datasets.CIFAR100('./data', train=True, download=True, transform=train_T)
+        else:
+            dataset = torchvision.datasets.CIFAR100('./data', train=False, download=True, transform=val_T)
     return dataset
 
 def build_transform(is_train, args):
