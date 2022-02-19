@@ -16,8 +16,7 @@ import os
 import time
 from pathlib import Path
 
-from utils import *
-from utils.data_loader_lmdb import ImageFolderLMDB
+from otherutils import *
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -31,9 +30,9 @@ import timm
 assert timm.__version__ == "0.3.2"  # version check
 import timm.optim.optim_factory as optim_factory
 
+from util.data_loader_lmdb import ImageFolderLMDB
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-
 import models_mae
 
 from engine_pretrain import train_one_epoch

@@ -1,14 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# --------------------------------------------------------
-# References:
-# DeiT: https://github.com/facebookresearch/deit
-# BEiT: https://github.com/microsoft/unilm/tree/master/beit
-# --------------------------------------------------------
-
 import math
 import sys
 from typing import Iterable, Optional
@@ -21,8 +10,15 @@ from otherutils import *
 import util.misc as misc
 import util.lr_sched as lr_sched
 
+def distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args):
+    temper = 1.
+    ratio = 1.
+    teach_part = 
+    label_part = torch.nn.CrossEntropyLoss(cls_out, targets)
+    return teach_part*ratio + (1-ratio)*label_part
 
-def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
+
+def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler, max_norm: float = 0,
                     mixup_fn: Optional[Mixup] = None, args=None):
@@ -30,6 +26,10 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     top1 = AverageMeter()
     top5 = AverageMeter()
     model.train(True)
+    model.global_pool = True
+    teacher.eval()
+    teacher.global_pool = True
+    
     accum_iter = args.accum_iter
     optimizer.zero_grad()
 
@@ -44,8 +44,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
-            loss = criterion(outputs, targets)
+            cls_teach, word_teach = teacher(samples)
+            cls_out, word_out = model(samples)
+            loss = distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):
@@ -58,7 +59,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()   
         torch.cuda.synchronize()
-        if data_iter_step%10 == 1:
+        if data_iter_step%10 == 0:
             prec1, prec5 = accuracy(outputs.data, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))

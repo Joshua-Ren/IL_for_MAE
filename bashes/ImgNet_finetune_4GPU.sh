@@ -21,4 +21,4 @@ cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_finetune.py --proj_name Finetune-CIFAR \
 --run_name offi_smallDE400_ep400 --batch_size 384 --dataset imagenet \
---finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-400.pth
+--finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-399.pth

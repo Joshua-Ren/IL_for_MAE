@@ -25,6 +25,7 @@ assert timm.__version__ == "0.3.2" # version check
 from timm.models.layers import trunc_normal_
 from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
+
 from otherutils import *
 import util.lr_decay as lrd
 import util.misc as misc
@@ -33,7 +34,6 @@ from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 import models_vit
-
 from engine_finetune import train_one_epoch, evaluate
 
 
