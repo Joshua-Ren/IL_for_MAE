@@ -117,6 +117,8 @@ def get_args_parser():
                         help='Use class token instead of global pool for classification')
 
     # Dataset parameters
+    parser.add_argument('--dataset', default='imagenet', type=str,
+                        help='can be imagenet, tiny, cifar100')    
     parser.add_argument('--nb_classes', default=1000, type=int,
                         help='number of the classification types')
                         
@@ -165,8 +167,8 @@ def main(args):
     cudnn.benchmark = True
     
     # ================== Prepare for the dataloader ===============
-    dataset_train = build_dataset_IN1K(is_train=True, args=args)
-    dataset_val = build_dataset_IN1K(is_train=False, args=args)
+    dataset_train = build_dataset(is_train=True, args=args)
+    dataset_val = build_dataset(is_train=False, args=args)
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
@@ -312,10 +314,12 @@ def main(args):
             if False:
                 misc.save_modargs=args, model=model, model_without_ddp=model_without_ddp,
                     optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
-            
-
 
 if __name__ == '__main__':
     args = get_args_parser()
     args = args.parse_args()
+    if args.dataset=='tiny':
+        args.nb_classes=200
+    elif args.dataset=='cifar100':
+        args.nb_class=100
     main(args)

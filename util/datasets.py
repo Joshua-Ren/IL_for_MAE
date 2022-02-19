@@ -11,7 +11,8 @@
 import os
 import PIL
 
-from torchvision import datasets, transforms
+from torchvision import datasets
+import torchvision.transforms as T
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from data_loader_lmdb import ImageFolderLMDB
@@ -21,11 +22,27 @@ def build_dataset_CIFAR100(is_train,args):
     pass
 
 
-def build_dataset_IN1K(is_train, args):
-    transform = build_transform(is_train, args)
-    args.data_path = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/'
-    root = os.path.join(args.data_path, 'train.lmbd' if is_train else 'val.lmdb')
-    dataset = datasets.ImageFolderLMDB(root, transform=transform)
+def build_dataset(is_train, args):
+    
+    if args.dataset=='imagenet':
+        transform = build_transform(is_train, args)
+        args.data_path = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/'
+        root = os.path.join(args.data_path, 'train.lmbd' if is_train else 'val.lmdb')
+        dataset = datasets.ImageFolderLMDB(root, transform=transform)
+    elif args.dataset=='tiny':
+        pass
+    elif args.dataset=='cifar100':
+        train_T=T.Compose([
+                        T.RandomResizedCrop(256,scale=(0.05, 1.0)),
+                        T.RandomHorizontalFlip(),
+                        T.ToTensor(),
+                        T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+                        ])
+        val_T =T.Compose([
+                        T.Resize(256),
+                        T.ToTensor(),
+                        T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+                        ])                        
     return dataset
 
 def build_transform(is_train, args):
@@ -56,10 +73,10 @@ def build_transform(is_train, args):
         crop_pct = 1.0
     size = int(args.input_size / crop_pct)
     t.append(
-        transforms.Resize(size, interpolation=PIL.Image.BICUBIC),  # to maintain same ratio w.r.t. 224 images
+        T.Resize(size, interpolation=PIL.Image.BICUBIC),  # to maintain same ratio w.r.t. 224 images
     )
-    t.append(transforms.CenterCrop(args.input_size))
+    t.append(T.CenterCrop(args.input_size))
 
-    t.append(transforms.ToTensor())
-    t.append(transforms.Normalize(mean, std))
-    return transforms.Compose(t)
+    t.append(T.ToTensor())
+    t.append(T.Normalize(mean, std))
+    return T.Compose(t)
