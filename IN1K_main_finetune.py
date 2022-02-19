@@ -232,9 +232,10 @@ def main(args):
     )
             # ----- Load the checkpoint
     if args.finetune and not args.eval:
-        ckp_path = base_folder + 'results/' + args.finetune
+        #ckp_path = base_folder + 'results/' + args.finetune
+        
+        ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
         checkpoint = torch.load(ckp_path, map_location='cpu')
-
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
