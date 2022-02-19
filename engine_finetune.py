@@ -63,10 +63,12 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
 @torch.no_grad()
 def evaluate(data_loader, model, device):
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
     criterion = torch.nn.CrossEntropyLoss()
-
-    metric_logger = misc.MetricLogger(delimiter="  ")
-    header = 'Test:'
+    #metric_logger = misc.MetricLogger(delimiter="  ")
+    #header = 'Test:'
 
     # switch to evaluation mode
     model.eval()
@@ -81,15 +83,18 @@ def evaluate(data_loader, model, device):
         with torch.cuda.amp.autocast():
             output = model(images)
             loss = criterion(output, target)
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
-        batch_size = images.shape[0]
-        metric_logger.update(loss=loss.item())
-        metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
-        metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
+        prec1, prec5 = accuracy(output, target, topk=(1, 5))
+        losses.update(loss.data.item(), x.size(0))
+        top1.update(prec1.item(), x.size(0))
+        top5.update(prec5.item(), x.size(0))
+        
+        #batch_size = images.shape[0]
+        #metric_logger.update(loss=loss.item())
+        #metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
+        #metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
     # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
-    if True:#misc.is_main_process():
-        wandb.log({'valid_loss':metric_logger.meters['loss']})
-        wandb.log({'valid_top1':metric_logger.meters['acc1']})
-        wandb.log({'valid_top5':metric_logger.meters['acc5']})
-    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    #metric_logger.synchronize_between_processes()
+    if misc.is_main_process():
+        wandb.log({'valid_loss':losses})
+        wandb.log({'valid_top1':top1})
+        wandb.log({'valid_top5':top5]})

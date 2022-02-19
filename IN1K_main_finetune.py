@@ -301,11 +301,7 @@ def main(args):
 
         #train_one_epoch(model, criterion, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
 
-        test_stats = evaluate(data_loader_val, model, device)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-        max_accuracy = max(max_accuracy, test_stats["acc1"])
-        print(f'Max accuracy: {max_accuracy:.2f}%')
-
+        evaluate(data_loader_val, model, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
             if False:
