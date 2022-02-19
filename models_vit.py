@@ -22,13 +22,19 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     """
     def __init__(self, global_pool=False, **kwargs):
         super(VisionTransformer, self).__init__(**kwargs)
-
+        self.distill = distill
         self.global_pool = global_pool
+
+        if self.distill:
+            norm_layer = kwargs['norm_layer']
+            embed_dim = kwargs['embed_dim']
+            self.fc_norm = norm_layer(embed_dim)
+
         if self.global_pool:
             norm_layer = kwargs['norm_layer']
             embed_dim = kwargs['embed_dim']
             self.fc_norm = norm_layer(embed_dim)
-            #del self.norm  # remove the original norm
+            del self.norm  # remove the original norm
 
     def forward_features(self, x):
         B = x.shape[0]
@@ -42,12 +48,16 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         for blk in self.blocks:
             x = blk(x)
 
-        if self.global_pool:
+        if self.distill:
             tmp_x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
             word_outcome = self.fc_norm(tmp_x)
             tmp2_x = self.norm(x)
             cls_outcome = tmp2_x[:,0]
             return cls_outcome, word_outcome
+        elif self.global_pool:
+            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
+            outcome = self.fc_norm(x)
+            return outcome
         else:
             x = self.norm(x)
             outcome = x[:, 0]
