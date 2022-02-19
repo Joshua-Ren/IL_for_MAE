@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 from utils import *
-from data_loader_lmdb import ImageFolderLMDB
+from utils.data_loader_lmdb import ImageFolderLMDB
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -81,8 +81,6 @@ def get_args_parser():
     
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./output_dir',
-                        help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)

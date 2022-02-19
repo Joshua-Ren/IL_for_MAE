@@ -22,15 +22,9 @@ def train_one_epoch(model: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler,args=None):
     model.train(True)
-    metric_logger = misc.MetricLogger(delimiter="  ")
-    metric_logger.add_meter('lr', misc.SmoothedValue(window_size=1, fmt='{value:.6f}'))
-    header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 20
-
     accum_iter = args.accum_iter
     optimizer.zero_grad()
 
-    #for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
     for data_iter_step, (samples, _) in enumerate(data_loader):
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:
@@ -50,16 +44,8 @@ def train_one_epoch(model: torch.nn.Module,
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()
         torch.cuda.synchronize()
-        
-        metric_logger.update(loss=loss_value)
-
         lr = optimizer.param_groups[0]["lr"]
-        metric_logger.update(lr=lr)
-
         loss_value_reduce = misc.all_reduce_mean(loss_value)
         if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
-            """ We use epoch_1000x as the x-axis in tensorboard.
-            This calibrates different curves when batch size changes.
-            """
             wandb.log({'loss':loss_value})
             wandb.log({'learn_rate':lr})

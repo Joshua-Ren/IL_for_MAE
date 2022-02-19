@@ -12,21 +12,21 @@ import os
 import PIL
 
 from torchvision import datasets, transforms
-
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from data_loader_lmdb import ImageFolderLMDB
 
 
-def build_dataset(is_train, args):
+def build_dataset_CIFAR100(is_train,args):
+    pass
+
+
+def build_dataset_IN1K(is_train, args):
     transform = build_transform(is_train, args)
-
-    root = os.path.join(args.data_path, 'train' if is_train else 'val')
-    dataset = datasets.ImageFolder(root, transform=transform)
-
-    print(dataset)
-
+    args.data_path = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/'
+    root = os.path.join(args.data_path, 'train.lmbd' if is_train else 'val.lmdb')
+    dataset = datasets.ImageFolderLMDB(root, transform=transform)
     return dataset
-
 
 def build_transform(is_train, args):
     mean = IMAGENET_DEFAULT_MEAN
