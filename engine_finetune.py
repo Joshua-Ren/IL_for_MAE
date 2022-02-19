@@ -62,7 +62,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()   
         torch.cuda.synchronize()
-        if data_iter_step%10 == 1:
+        if data_iter_step%10 == 9:
             prec1, prec5 = accuracy(outputs.data, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))
