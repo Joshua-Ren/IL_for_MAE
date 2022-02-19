@@ -97,4 +97,4 @@ def evaluate(data_loader, model, device):
     if misc.is_main_process():
         wandb.log({'valid_loss':losses})
         wandb.log({'valid_top1':top1})
-        wandb.log({'valid_top5':top5]})
+        wandb.log({'valid_top5':top5})
