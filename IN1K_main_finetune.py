@@ -19,8 +19,6 @@ from pathlib import Path
 
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.tensorboard import SummaryWriter
-
 import timm
 
 assert timm.__version__ == "0.3.2" # version check
