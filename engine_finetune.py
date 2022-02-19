@@ -82,9 +82,9 @@ def evaluate(data_loader, model, device):
             output = model(images)
             loss = criterion(output, target)
         prec1, prec5 = accuracy(output, target, topk=(1, 5))
-        losses.update(loss.data.item(), x.size(0))
-        top1.update(prec1.item(), x.size(0))
-        top5.update(prec5.item(), x.size(0))
+        losses.update(loss.data.item(), images.size(0))
+        top1.update(prec1.item(), images.size(0))
+        top5.update(prec5.item(), images.size(0))
         
         #batch_size = images.shape[0]
         #metric_logger.update(loss=loss.item())
