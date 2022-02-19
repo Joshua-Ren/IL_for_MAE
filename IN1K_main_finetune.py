@@ -300,6 +300,8 @@ def main(args):
             data_loader_train.sampler.set_epoch(epoch)
 
         test_stats = evaluate(data_loader_val, model, device)
+        max_accuracy = max(max_accuracy, test_stats["acc1"])
+        
         train_one_epoch(model, criterion, data_loader_train,
             optimizer, device, epoch, loss_scaler,
             args.clip_grad, mixup_fn, args=args)
