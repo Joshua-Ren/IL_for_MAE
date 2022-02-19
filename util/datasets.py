@@ -28,7 +28,7 @@ def build_dataset(is_train, args):
         transform = build_transform(is_train, args)
         args.data_path = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/'
         root = os.path.join(args.data_path, 'train.lmbd' if is_train else 'val.lmdb')
-        dataset = datasets.ImageFolderLMDB(root, transform=transform)
+        dataset = ImageFolderLMDB(root, transform=transform)
     elif args.dataset=='tiny':
         pass
     elif args.dataset=='cifar100':
