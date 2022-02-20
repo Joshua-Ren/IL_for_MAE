@@ -25,11 +25,11 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         self.distill = distill
         self.global_pool = global_pool
 
-        if self.distill:
-            norm_layer = kwargs['norm_layer']
-            embed_dim = kwargs['embed_dim']
-            self.fc_norm = norm_layer(embed_dim)
-            del self.norm  # remove the original norm
+#        if self.distill:
+#            norm_layer = kwargs['norm_layer']
+#            embed_dim = kwargs['embed_dim']
+#            self.fc_norm = norm_layer(embed_dim)
+#            del self.norm  # remove the original norm
 
         if self.global_pool:
             norm_layer = kwargs['norm_layer']
@@ -49,14 +49,15 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         for blk in self.blocks:
             x = blk(x)
 
-        if self.distill:
-            word_outcome = x[:, 1:, :]
-            logits_outcome = self.fc_norm(x[:, 1:, :].mean(dim=1))
-            return logits_outcome, word_outcome
         if self.global_pool:
-            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
-            outcome = self.fc_norm(x)
-            return outcome
+            if self.distill:
+                word_outcome = x[:, 1:, :]
+                logits_outcome = self.fc_norm(x[:, 1:, :].mean(dim=1))
+                return logits_outcome, word_outcome      
+            else:
+                x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
+                outcome = self.fc_norm(x)
+                return outcome
         else:
             x = self.norm(x)
             outcome = x[:, 0]
