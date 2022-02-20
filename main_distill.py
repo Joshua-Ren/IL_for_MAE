@@ -270,8 +270,6 @@ def main(args):
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
-        teacher = torch.nn.parallel.DistributedDataParallel(teacher, device_ids=[args.gpu])
-        teacher = teacher.module
 
     # build optimizer with layer-wise lr decay (lrd)
     param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay,
