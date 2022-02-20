@@ -46,12 +46,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            outputs, word_out = model(samples)
-
-            print(outputs.shape)
-            print(word_out.shape)
-
-            #outputs = model(samples)
+            outputs = model(samples)
             loss = criterion(outputs, targets)
         loss_value = loss.item()
 
@@ -66,20 +61,20 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()   
         torch.cuda.synchronize()
         if data_iter_step%10 == 0:
+            lr = optimizer.param_groups[0]["lr"]
             prec1, prec5 = accuracy(outputs.data, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))
             top5.update(prec5.item(), samples.size(0))   
             if misc.is_main_process():
                 wandb.log({'loss':loss.item()})            
-                    
-    curr_lr = optimizer.param_groups[0]["lr"]
+                wandb.log({'learn_rate':lr})
+
     if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
         wandb.log({'epoch':epoch})
         wandb.log({'train_loss':losses.avg})
         wandb.log({'train_top1':top1.avg})
         wandb.log({'train_top5':top5.avg})
-        wandb.log({'learn_rate':curr_lr})
             
 @torch.no_grad()
 def evaluate(data_loader, model, device):

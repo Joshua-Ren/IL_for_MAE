@@ -38,16 +38,19 @@ from engine_finetune import train_one_epoch, evaluate
 
 
 def get_args_parser():
-    parser = argparse.ArgumentParser('IN1K fine-tune', add_help=False)
+    parser = argparse.ArgumentParser('IN1K distill', add_help=False)
     parser.add_argument('--batch_size', default=64, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
-    parser.add_argument('--epochs', default=50, type=int)
+    parser.add_argument('--epochs', default=200, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
     # Model parameters
     parser.add_argument('--model', default='vit_base_patch16', type=str, metavar='MODEL',
                         help='Name of model to train')
+
+    parser.add_argument('--teachmodel', default='vit_base_patch16', type=str, metavar='MODEL',
+                        help='Name of teachmodel to train')
 
     parser.add_argument('--input_size', default=224, type=int,
                         help='images input size')
@@ -71,7 +74,7 @@ def get_args_parser():
     parser.add_argument('--min_lr', type=float, default=1e-6, metavar='LR',
                         help='lower lr bound for cyclic schedulers that hit 0')
 
-    parser.add_argument('--warmup_epochs', type=int, default=5, metavar='N',
+    parser.add_argument('--warmup_epochs', type=int, default=20, metavar='N',
                         help='epochs to warmup LR')
 
     # Augmentation parameters
@@ -107,8 +110,8 @@ def get_args_parser():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # * Finetuning params
-    parser.add_argument('--finetune', default='',
-                        help='finetune from checkpoint')
+    parser.add_argument('--teach_ckp', default='',
+                        help='teacher from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
@@ -121,7 +124,7 @@ def get_args_parser():
                         help='number of the classification types')
                         
     parser.add_argument('--run_name',default=None,type=str)
-    parser.add_argument('--proj_name',default='Finetune-IN1K', type=str)
+    parser.add_argument('--proj_name',default='Distill-IN1K', type=str)
     
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
@@ -222,40 +225,40 @@ def main(args):
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
     
     # ================== Create the model: ViT ==================
-    model = models_vit.__dict__[args.model](
-        num_classes=args.nb_classes,
-        drop_path_rate=args.drop_path,
-        global_pool=args.global_pool,
-    )
-            # ----- Load the checkpoint
-    if args.finetune and not args.eval:
-        ckp_path = base_folder + 'results/' + args.finetune
-        #ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
-        checkpoint = torch.load(ckp_path, map_location='cpu')
-        checkpoint_model = checkpoint['model']
-        state_dict = model.state_dict()
-        for k in ['head.weight', 'head.bias']:
-            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-                print(f"Removing key {k} from pretrained checkpoint")
-                del checkpoint_model[k]
-
-        # interpolate position embedding
-        interpolate_pos_embed(model, checkpoint_model)
-
-        # load pre-trained model
-        msg = model.load_state_dict(checkpoint_model, strict=False)
-        print(msg)
-
-        if args.global_pool:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
-        else:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
-
-        # manually initialize fc layer
-        trunc_normal_(model.head.weight, std=2e-5)
-
+    model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
+                                            drop_path_rate=args.drop_path,
+                                            distill=True,)
+    teacher = models_vit.__dict__[args.teachmodel](num_classes=args.nb_classes,
+                                            drop_path_rate=args.drop_path,
+                                            distill=True,)
     model.to(device)
+    teacher.to(device)
     model_without_ddp = model
+    teacher_without_ddp = teacher
+            # ----- Load teacher from the checkpoint
+    ckp_path = base_folder + 'results/' + args.teach_ckp
+    #ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
+    checkpoint = torch.load(ckp_path, map_location='cpu')
+    checkpoint_model = checkpoint['model']
+    state_dict = teacher.state_dict()
+    for k in ['head.weight', 'head.bias']:
+        if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+            print(f"Removing key {k} from pretrained checkpoint")
+            del checkpoint_model[k]
+
+    # interpolate position embedding
+    interpolate_pos_embed(teacher, checkpoint_model)
+
+    # load pre-trained model
+    msg = teacher.load_state_dict(checkpoint_model, strict=False)
+    print(msg)
+
+    if args.global_pool:
+        assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
+    else:
+        assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
+    # manually initialize fc layer
+    #trunc_normal_(model.head.weight, std=2e-5)
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     
@@ -265,6 +268,8 @@ def main(args):
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
+        teacher = torch.nn.parallel.DistributedDataParallel(teacher, device_ids=[args.gpu])
+        teacher = teacher.module
 
     # build optimizer with layer-wise lr decay (lrd)
     param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay,
@@ -273,16 +278,6 @@ def main(args):
     )
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
     loss_scaler = NativeScaler()
-
-    if mixup_fn is not None:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif args.smoothing > 0.:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
-
-    print("criterion = %s" % str(criterion))
 
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
 
@@ -298,11 +293,11 @@ def main(args):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(model, criterion, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
+        train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
         evaluate(data_loader_val, model, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
-            if False:
+            if epoch % 25 == 0 or epoch + 1 == args.epochs:
                 misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
                 optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
 

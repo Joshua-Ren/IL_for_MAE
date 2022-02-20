@@ -13,7 +13,7 @@ import util.lr_sched as lr_sched
 def distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args):
     temper = 1.
     ratio = 1.
-    teach_part = 
+    teach_part = 1
     label_part = torch.nn.CrossEntropyLoss(cls_out, targets)
     return teach_part*ratio + (1-ratio)*label_part
 
@@ -26,9 +26,9 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
     top1 = AverageMeter()
     top5 = AverageMeter()
     model.train(True)
-    model.global_pool = True
+    model.distill = True
     teacher.eval()
-    teacher.global_pool = True
+    teacher.distill = True
     
     accum_iter = args.accum_iter
     optimizer.zero_grad()
@@ -46,6 +46,10 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         with torch.cuda.amp.autocast():
             cls_teach, word_teach = teacher(samples)
             cls_out, word_out = model(samples)
+            
+            print(cls_teach.shape)
+            print(word_teach.shape)
+            
             loss = distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args)
         loss_value = loss.item()
 
