@@ -230,7 +230,7 @@ def main(args):
                                             distill=True,)
     teacher = models_vit.__dict__[args.teachmodel](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
-                                            distill=True,)
+                                            distill=False,)
     model.to(device)
     teacher.to(device)
     model_without_ddp = model

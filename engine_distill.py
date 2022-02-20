@@ -42,7 +42,8 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            cls_teach, word_teach = teacher(samples)
+            word_teach = teacher(samples)
+            #cls_teach, word_teach = teacher(samples)
             cls_out, word_out = model(samples)
             
             print(cls_teach.shape)
