@@ -55,9 +55,9 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             cls_outcome = tmp2_x[:,0]
             return cls_outcome, word_outcome
         elif self.global_pool:
-            #x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
-            #outcome = self.fc_norm(x)
-            return x#outcome
+            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
+            outcome = self.fc_norm(x)
+            return outcome
         else:
             x = self.norm(x)
             outcome = x[:, 0]

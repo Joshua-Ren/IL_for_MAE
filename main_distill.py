@@ -228,11 +228,11 @@ def main(args):
     model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
                                             global_pool=args.global_pool,
-                                            distill=False,)
+                                            distill=True,)
     teacher = models_vit.__dict__[args.teachmodel](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
                                             global_pool=args.global_pool,
-                                            distill=False,)
+                                            distill=True,)
     for param in teacher.parameters():
         param.requires_grad = False    
     model.to(device)
