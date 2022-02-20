@@ -48,7 +48,16 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
         for blk in self.blocks:
             x = blk(x)
+            
+        if self.global_pool:
+            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
+            outcome = self.fc_norm(x)
+        else:
+            x = self.norm(x)
+            outcome = x[:, 0]
 
+        return outcome        
+'''
         if self.global_pool:
             if self.distill:
                 word_outcome = x[:, 1:, :]
@@ -57,12 +66,12 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             else:
                 x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
                 outcome = self.fc_norm(x)
-                return outcome,1
+                return outcome
         else:
             x = self.norm(x)
             outcome = x[:, 0]
             return outcome
-
+'''
 
 def vit_base_patch16(**kwargs):
     model = VisionTransformer(
