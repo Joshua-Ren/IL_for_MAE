@@ -233,7 +233,10 @@ def main(args):
                                             drop_path_rate=args.drop_path,
                                             global_pool=args.global_pool,
                                             distill=False,)
+    for param in teacher.features.parameters():
+        param.requires_grad = False    
     model.to(device)
+    teacher.to(device)
     model_without_ddp = model
             # ----- Load teacher from the checkpoint
     ckp_path = base_folder + 'results/' + args.teach_ckp
