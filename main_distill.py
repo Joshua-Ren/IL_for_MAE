@@ -227,9 +227,11 @@ def main(args):
     # ================== Create the model: ViT ==================
     model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
-                                            distill=True,)
+                                            global_pool=args.global_pool,
+                                            distill=False,)
     teacher = models_vit.__dict__[args.teachmodel](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
+                                            global_pool=args.global_pool,
                                             distill=False,)
     model.to(device)
     teacher.to(device)
