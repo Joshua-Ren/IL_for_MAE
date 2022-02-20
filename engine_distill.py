@@ -17,11 +17,9 @@ def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     ratio = 1.
     a = teach_words.reshape(-1,1, words_dim)
     b = words.reshape(-1,1, words_dim).transpose(1,2)
-    teach_part = torch.bmm(a,b)
+    teach_part = torch.bmm(a,b).sum()
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
-    print(label_part)
-    print(label_part.shape)
-    return teach_part.sum()*ratio + (1-ratio)*label_part
+    return teach_part*ratio + (1-ratio)*label_part
 
 
 def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
@@ -64,11 +62,14 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             optimizer.zero_grad()   
         torch.cuda.synchronize()
         if data_iter_step%10 == 0:
+            lr = optimizer.param_groups[0]["lr"]
             prec1, prec5 = accuracy(logits.data, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))
-            top5.update(prec5.item(), samples.size(0))   
-            wandb.log({'loss':loss.item()})            
+            top5.update(prec5.item(), samples.size(0))  
+            if misc.is_main_process():
+                wandb.log({'loss':loss.item()}) 
+                wandb.log({'learn_rate':lr})                
                     
     curr_lr = optimizer.param_groups[0]["lr"]
     if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
