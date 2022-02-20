@@ -10,11 +10,15 @@ from otherutils import *
 import util.misc as misc
 import util.lr_sched as lr_sched
 
-def distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args):
+def distill_loss(logits_teach, word_teach, logits, word, targets, args):
+    # Shape of 
+    emb_dim = word_teach.shape[-1]
     temper = 1.
     ratio = 1.
-    teach_part = 1
-    label_part = torch.nn.CrossEntropyLoss(cls_out, targets)
+    a = word_teach.reshape(-1,emb_dim)
+    b = word.reshape(-1,emb_dim).reshape(0,1)
+    teach_part = torch.matmul(a,b)
+    label_part = torch.nn.CrossEntropyLoss(logits, targets)
     return teach_part*ratio + (1-ratio)*label_part
 
 
@@ -42,12 +46,9 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            cls_teach, word_teach = teacher(samples)
-            cls_teach, word_teach = teacher(samples)
-            #word_out = model(samples)
-            print(cls_teach.shape)
-            print(word_teach.shape)
-            loss = distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args)
+            logits_teach, word_teach = teacher(samples)
+            logits, word = model(samples)
+            loss = distill_loss(logits_teach, word_teach, logits, word, targets, args)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):
