@@ -14,9 +14,9 @@ def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     # Shape of 
     words_dim = teach_words.shape[-1]
     temper = 1.
-    ratio = 1.
+    ratio = args.dis_ratio
     cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-6)
-    teach_part = -cos(words, teach_words).mean()
+    teach_part = 1-cos(words, teach_words).mean()
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
     return teach_part*ratio + (1-ratio)*label_part
 
