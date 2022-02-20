@@ -10,15 +10,15 @@ from otherutils import *
 import util.misc as misc
 import util.lr_sched as lr_sched
 
-def distill_loss(teach_output, output, targets, args):
+def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     # Shape of 
-    emb_dim = teach_output.shape[-1]
+    words_dim = teach_words.shape[-1]
     temper = 1.
     ratio = 1.
-    a = teach_output.reshape(-1,1, emb_dim)
-    b = output.reshape(-1,1, emb_dim).transpose(1,2)
+    a = teach_words.reshape(-1,1, words_dim)
+    b = words.reshape(-1,1, words_dim).transpose(1,2)
     teach_part = torch.bmm(a,b)
-    label_part = 0#torch.nn.CrossEntropyLoss(logits, targets)
+    label_part = torch.nn.CrossEntropyLoss(logits, targets)
     return teach_part.sum()*ratio + (1-ratio)*label_part
 
 
@@ -46,9 +46,9 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            output = model(samples)
-            teach_output = teacher(samples)
-            loss = distill_loss(teach_output, output, targets, args)
+            logits, words = model(samples)
+            teach_logits, teach_words = teacher(samples)
+            loss = distill_loss(teach_logits, teach_words, logits, words, targets, args)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):
@@ -62,7 +62,7 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             optimizer.zero_grad()   
         torch.cuda.synchronize()
         if data_iter_step%10 == 0:
-            prec1, prec5 = accuracy(outputs.data, targets, topk=(1, 5))
+            prec1, prec5 = accuracy(logits.data, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))
             top5.update(prec5.item(), samples.size(0))   
@@ -90,9 +90,9 @@ def evaluate(data_loader, model, device):
 
         # compute output
         with torch.cuda.amp.autocast():
-            output = model(images)
-            loss = criterion(output, target)
-        prec1, prec5 = accuracy(output, target, topk=(1, 5))
+            logits, _ = model(images)
+            loss = criterion(logits, target)
+        prec1, prec5 = accuracy(logits, target, topk=(1, 5))
         losses.update(loss.data.item(), images.size(0))
         top1.update(prec1.item(), images.size(0))
         top5.update(prec5.item(), images.size(0))
