@@ -60,27 +60,11 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         # ----- x_words is [B, H*W, dim], representing 'word' for each patch
         if self.distill:
             x, x_words = self.forward_features(x)
-            if self.head_dist is not None:
-                x, x_dist = self.head(x[0]), self.head_dist(x[1])  # x must be a tuple
-                if self.training and not torch.jit.is_scripting():
-                    # during inference, return the average of both classifier predictions
-                    return x, x_dist, x_words
-                else:
-                    return (x + x_dist) / 2, x_words
-            else:
-                x = self.head(x)
+            x = self.head(x)
             return x, x_words          
         else:
             x = self.forward_features(x)
-            if self.head_dist is not None:
-                x, x_dist = self.head(x[0]), self.head_dist(x[1])  # x must be a tuple
-                if self.training and not torch.jit.is_scripting():
-                    # during inference, return the average of both classifier predictions
-                    return x, x_dist
-                else:
-                    return (x + x_dist) / 2
-            else:
-                x = self.head(x)
+            x = self.head(x)
             return x
 
 '''
