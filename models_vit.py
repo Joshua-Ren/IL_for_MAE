@@ -44,7 +44,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
         if self.global_pool:
             if self.distill:
-                return x[:, 1:, :]
+                logits = self.fc_norm(x[:, 1:, :].mean(dim=1))
+                return logits, x[:, 1:, :]
             else:
                 x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
                 outcome = self.fc_norm(x)

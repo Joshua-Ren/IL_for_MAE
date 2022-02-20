@@ -46,12 +46,14 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             samples, targets = mixup_fn(samples, targets)
 
         with torch.cuda.amp.autocast():
-            output = model(samples)
-            teach_output = teacher(samples)
-            print(teach_output.shape)
-            loss = 1
-            #logits, word = model(samples)
-            #logits_teach, word_teach = teacher(samples)
+            #output = model(samples)
+            #teach_output = teacher(samples)
+            #print(teach_output.shape)
+            #loss = 1
+            logits, word = model(samples)
+            logits_teach, word_teach = teacher(samples)
+            print(logits.shape)
+            print(word.shape)
             #loss = distill_loss(logits_teach, word_teach, logits, word, targets, args)
         loss_value = loss.item()
 
