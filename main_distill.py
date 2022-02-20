@@ -234,9 +234,7 @@ def main(args):
                                             global_pool=args.global_pool,
                                             distill=False,)
     model.to(device)
-    teacher.to(device)
     model_without_ddp = model
-    teacher_without_ddp = teacher
             # ----- Load teacher from the checkpoint
     ckp_path = base_folder + 'results/' + args.teach_ckp
     #ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
