@@ -22,7 +22,7 @@ def distill_loss(teach_output, output, targets, args):
     print(b.shape)
     print(teach_part.shape)
     label_part = 0#torch.nn.CrossEntropyLoss(logits, targets)
-    return teach_part*ratio + (1-ratio)*label_part
+    return teach_part.sum()*ratio + (1-ratio)*label_part
 
 
 def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
