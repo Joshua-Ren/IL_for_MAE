@@ -84,8 +84,8 @@ def get_args_parser():
                         help='Use AutoAugment policy. "v0" or "original". " + "(default: rand-m9-mstd0.5-inc1)'),
     parser.add_argument('--smoothing', type=float, default=0.1,
                         help='Label smoothing (default: 0.1)')
-    parser.add_argument('--dis_ratio', type=float, default=1,
-                        help='Label smoothing (default: 0.1)')                       
+    parser.add_argument('--dis_ratio', type=float, default=1.,
+                        help='1 is pure distill, 0 is pure from target')                       
 
     # * Random Erase params
     parser.add_argument('--reprob', type=float, default=0.25, metavar='PCT',
