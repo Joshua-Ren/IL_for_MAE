@@ -34,7 +34,7 @@ from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 import models_vit
-from engine_finetune import train_one_epoch, evaluate
+from engine_distill import train_one_epoch, evaluate
 
 
 def get_args_parser():

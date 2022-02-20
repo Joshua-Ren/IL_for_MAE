@@ -26,9 +26,7 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
     top1 = AverageMeter()
     top5 = AverageMeter()
     model.train(True)
-    model.distill = True
     teacher.eval()
-    teacher.distill = True
     
     accum_iter = args.accum_iter
     optimizer.zero_grad()
