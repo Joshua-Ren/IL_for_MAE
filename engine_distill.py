@@ -15,9 +15,9 @@ def distill_loss(teach_output, output, targets, args):
     emb_dim = teach_output.shape[-1]
     temper = 1.
     ratio = 1.
-    a = teach_output.reshape(-1,emb_dim)
-    b = output.reshape(-1,emb_dim).transpose(0,1)
-    teach_part = torch.matmul(a,b)
+    a = teach_output.reshape(-1,1, emb_dim)
+    b = output.reshape(-1,1, emb_dim).transpose(1,2)
+    teach_part = torch.bmm(a,b)
     print(a.shape)
     print(b.shape)
     print(teach_part.shape)
