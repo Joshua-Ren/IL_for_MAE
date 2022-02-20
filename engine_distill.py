@@ -45,11 +45,9 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
             word_teach = teacher(samples)
             #cls_teach, word_teach = teacher(samples)
             word_out = model(samples)
-            
-            print(cls_teach.shape)
             print(word_teach.shape)
-            
-            loss = distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args)
+            loss = 1
+            #loss = distill_loss(cls_teach, word_teach, cls_out, word_out, targets, args)
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):
