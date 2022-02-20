@@ -16,7 +16,7 @@ def distill_loss(teach_output, output, targets, args):
     temper = 1.
     ratio = 1.
     a = teach_output.reshape(-1,emb_dim)
-    b = output.reshape(-1,emb_dim).reshape(0,1)
+    b = output.reshape(-1,emb_dim).transpose(0,1)
     teach_part = torch.matmul(a,b)
     label_part = 0#torch.nn.CrossEntropyLoss(logits, targets)
     return teach_part*ratio + (1-ratio)*label_part
