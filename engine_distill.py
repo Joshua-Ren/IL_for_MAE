@@ -44,7 +44,7 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         with torch.cuda.amp.autocast():
             word_teach = teacher(samples)
             #cls_teach, word_teach = teacher(samples)
-            cls_out, word_out = model(samples)
+            word_out = model(samples)
             
             print(cls_teach.shape)
             print(word_teach.shape)
