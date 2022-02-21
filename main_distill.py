@@ -297,6 +297,10 @@ def main(args):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
+            
+        if misc.is_main_process():   
+            misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
+            optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
         evaluate(data_loader_val, model, device)
