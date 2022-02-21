@@ -124,6 +124,8 @@ def get_args_parser():
                         help='can be imagenet, tiny, cifar100')    
     parser.add_argument('--nb_classes', default=1000, type=int,
                         help='number of the classification types')
+    parser.add_argument('--lp_dataset', default='cifar100', type=str,
+                        help='can be imagenet, tiny, cifar100')
                         
     parser.add_argument('--run_name',default=None,type=str)
     parser.add_argument('--proj_name',default='Distill-IN1K', type=str)
@@ -169,7 +171,7 @@ def main(args):
     np.random.seed(seed)
     cudnn.benchmark = True
     
-    # ================== Prepare for the dataloader ===============
+    # ================== Prepare for the distill dataloader ===============
     dataset_train = build_dataset(is_train=True, args=args)
     dataset_val = build_dataset(is_train=False, args=args)
 
@@ -191,14 +193,6 @@ def main(args):
     else:
         sampler_train = torch.utils.data.RandomSampler(dataset_train)
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
-    
-    # =================== Initialize wandb ========================
-    if misc.is_main_process():
-        run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
-        save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
-        args.output_dir = save_path
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
 
     # ================== Prepare for the dataloader ===============
     data_loader_train = torch.utils.data.DataLoader(
@@ -226,6 +220,43 @@ def main(args):
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
     
+    # ================== Prepare for the linear prob dataloader ===============
+    LP_dataset_train = build_dataset(is_train=True, args=args, force_dataset=args.lp_dataset)
+    LP_dataset_val = build_dataset(is_train=False, args=args, force_dataset=args.lp_dataset)
+
+    if True:  # args.distributed:
+        LP_sampler_train = torch.utils.data.DistributedSampler(
+            LP_dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True)
+        LP_sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+    else:
+        LP_sampler_train = torch.utils.data.RandomSampler(LP_dataset_train)
+        LP_sampler_val = torch.utils.data.SequentialSampler(LP_dataset_val)
+
+    # ================== Prepare for the dataloader ===============
+    LP_data_loader_train = torch.utils.data.DataLoader(
+        LP_dataset_train, sampler=LP_sampler_train,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=args.pin_mem,
+        drop_last=True,
+    )
+
+    LP_data_loader_val = torch.utils.data.DataLoader(
+        LP_dataset_val, sampler=LP_sampler_val,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=args.pin_mem,
+        drop_last=False
+    )
+
+    # =================== Initialize wandb ========================
+    if misc.is_main_process():
+        run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
+        save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
+        args.output_dir = save_path
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
     # ================== Create the model: ViT ==================
     model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
                                             drop_path_rate=args.drop_path,
@@ -265,8 +296,6 @@ def main(args):
     trunc_normal_(model.head.weight, std=2e-5)
     trunc_normal_(teacher.head.weight, std=2e-5)
 
-
-
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     
     if args.lr is None:  # only base_lr is specified
@@ -294,6 +323,8 @@ def main(args):
     print(f"Start training for {args.epochs} epochs")
     start_time = time.time()
     max_accuracy = 0.0
+    # ------- Before distill, calculate teacher's results
+    teach_results = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
@@ -303,7 +334,8 @@ def main(args):
             optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
-        evaluate(data_loader_val, model, device)
+        # -------- Linear Prob every epoch --------------
+        linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
             if epoch % 25 == 0 or epoch + 1 == args.epochs:

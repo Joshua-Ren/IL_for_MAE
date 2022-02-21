@@ -19,16 +19,20 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .data_loader_lmdb import ImageFolderLMDB
 
 
-def build_dataset(is_train, args):
-    
-    if args.dataset=='imagenet':
+def build_dataset(is_train, args, force_dataset=None):
+    if force_dataset is None:
+        dataset_name = args.dataset
+    else:
+        dataset_name = force_dataset
+        
+    if dataset_name=='imagenet':
         transform = build_transform(is_train, args)
         args.data_path = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/datasets/ImageNet/'
         root = os.path.join(args.data_path, 'train.lmdb' if is_train else 'val.lmdb')
         dataset = ImageFolderLMDB(root, transform=transform)
-    elif args.dataset=='tiny':
+    elif dataset_name=='tiny':
         pass
-    elif args.dataset=='cifar100':
+    elif dataset_name=='cifar100':
         train_T=T.Compose([
                         T.RandomResizedCrop(224,scale=(0.05, 1.0)),
                         T.RandomHorizontalFlip(),

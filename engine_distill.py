@@ -75,7 +75,67 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         wandb.log({'train_loss':losses.avg})
         wandb.log({'train_top1':top1.avg})
         wandb.log({'train_top5':top5.avg})
-            
+       
+def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, teach_flag=False):
+    # ------ deep copy the model, linear prob using multi-GPU, 
+    # output test-acc, delete the model
+    if teach_flag:
+        tmp = 'T_'
+    else:
+        tmp = 'S_'
+    v_losses = AverageMeter()
+    v_top1 = AverageMeter()
+    v_top5 = AverageMeter()    
+    # ------- Prepare the model: change head, freeze other layers
+    lp_model = model.copy()
+    num_features = lp_model.num_features
+    if args.lp_dataset=='imagenet':
+        num_classes = 1000
+    elif args.lp_dataset=='tiny':
+        num_classes = 200
+    elif args.lp_dataset=='cifar100':
+        num_classes = 100
+    lp_model.head = nn.Linear(num_features, num_classes)
+    lp_model.head = torch.nn.Sequential(torch.nn.BatchNorm1d(lp_model.head.in_features, affine=False, eps=1e-6), lp_model.head)
+    for _, p in lp_model.named_parameters():
+        p.requires_grad = False
+    for _, p in lp_model.head.named_parameters():
+        p.requires_grad = True
+
+    # --------- Prepare the optimizers
+    optimizer = LARS(lp_model.head.parameters(), lr=1e-4, weight_decay=args.weight_decay)
+    for epoch in range(50):
+        lp_model.train()
+        # --- train linear prob
+        for data_iter_step, (samples, targets) in enumerate(LP_data_loader_train):
+            samples = samples.to(device, non_blocking=True)
+            targets = targets.to(device, non_blocking=True)            
+            with torch.cuda.amp.autocast():
+                logits, _ = lp_model(samples)
+                loss = torch.nn.CrossEntropyLoss()(logits, targets)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            if misc.is_main_process():
+                wandb.log({tmp+'T_loss':loss.item()})
+        # --- Validate linear prob
+        lp_model.eval()
+        with torch.no_grad():
+            for i, (images,target) in enumerate(LP_data_loader_val):
+                images = images.to(device, non_blocking=True)
+                labels = target.to(device, non_blocking=True)
+                with torch.cuda.amp.autocast():
+                    v_logits, _ = lp_model(images)
+                    v_loss = torch.nn.CrossEntropyLoss()(logits, target)
+                v_prec1, v_prec5 = accuracy(v_logits, labels, topk=(1, 5))
+                v_losses.update(v_loss.data.item(), images.size(0))
+                v_top1.update(v_prec1.item(), images.size(0))
+                v_top5.update(v_prec5.item(), images.size(0))
+            if misc.is_main_process():
+                wandb.log({tmp+'V_loss':v_losses.avg})
+                wandb.log({tmp+'V_top1':v_top1.avg})
+                wandb.log({tmp+'V_top5':v_top5.avg})
+        
 @torch.no_grad()
 def evaluate(data_loader, model, device):
     losses = AverageMeter()
