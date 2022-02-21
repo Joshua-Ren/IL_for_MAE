@@ -135,7 +135,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, 
                 wandb.log({tmp+'V_loss':v_losses.avg})
                 wandb.log({tmp+'V_top1':v_top1.avg})
                 wandb.log({tmp+'V_top5':v_top5.avg})
-        
+    del lp_model
 @torch.no_grad()
 def evaluate(data_loader, model, device):
     losses = AverageMeter()

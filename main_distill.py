@@ -321,8 +321,6 @@ def main(args):
         exit(0)
 
     print(f"Start training for {args.epochs} epochs")
-    start_time = time.time()
-    max_accuracy = 0.0
     # ------- Before distill, calculate teacher's results
     teach_results = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
