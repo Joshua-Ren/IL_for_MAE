@@ -62,7 +62,7 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         torch.cuda.synchronize()
         if data_iter_step%10 == 0:
             lr = optimizer.param_groups[0]["lr"]
-            prec1, prec5 = accuracy(logits.data, targets, topk=(1, 5))
+            prec1, prec5 = accuracy(logits, targets, topk=(1, 5))
             losses.update(loss.data.item(), samples.size(0))
             top1.update(prec1.item(), samples.size(0))
             top5.update(prec5.item(), samples.size(0))  
@@ -70,13 +70,11 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
                 wandb.log({'loss':loss.item()}) 
                 wandb.log({'learn_rate':lr})                
                     
-    curr_lr = optimizer.param_groups[0]["lr"]
     if misc.is_main_process() and (data_iter_step + 1) % accum_iter == 0:
         wandb.log({'epoch':epoch})
         wandb.log({'train_loss':losses.avg})
         wandb.log({'train_top1':top1.avg})
         wandb.log({'train_top5':top5.avg})
-        wandb.log({'learn_rate':curr_lr})
             
 @torch.no_grad()
 def evaluate(data_loader, model, device):
