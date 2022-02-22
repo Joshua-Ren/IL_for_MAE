@@ -3,7 +3,7 @@ import sys
 from typing import Iterable, Optional
 import wandb
 import torch
-
+import copy
 from timm.data import Mixup
 from timm.utils import accuracy
 from otherutils import *
@@ -87,7 +87,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, 
     v_top1 = AverageMeter()
     v_top5 = AverageMeter()    
     # ------- Prepare the model: change head, freeze other layers
-    lp_model = model.copy()
+    lp_model = copy.deepcopy(model)
     num_features = lp_model.num_features
     if args.lp_dataset=='imagenet':
         num_classes = 1000
