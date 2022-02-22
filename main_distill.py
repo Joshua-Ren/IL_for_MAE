@@ -74,7 +74,7 @@ def get_args_parser():
     parser.add_argument('--min_lr', type=float, default=1e-6, metavar='LR',
                         help='lower lr bound for cyclic schedulers that hit 0')
 
-    parser.add_argument('--warmup_epochs', type=int, default=20, metavar='N',
+    parser.add_argument('--warmup_epochs', type=int, default=5, metavar='N',
                         help='epochs to warmup LR')
 
     # Augmentation parameters
@@ -322,8 +322,7 @@ def main(args):
 
     print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    _ = linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
-    (t_top1, t_top5) = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
+    t_top1, t_top5 = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
@@ -333,9 +332,8 @@ def main(args):
             optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
-        (s_top1, s_top5)=linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
+        s_top1, s_top5=linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
         # -------- Linear Prob every epoch --------------
-        linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
             wandb.log({'GAP_TOP1':s_top1-t_top1})

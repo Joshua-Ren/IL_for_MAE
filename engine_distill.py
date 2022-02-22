@@ -83,9 +83,9 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     # ------ deep copy the model, linear prob using multi-GPU, 
     # output test-acc, delete the model
     if teach_flag:
-        tmp = 'T_'
+        tmp = 'D_'
     else:
-        tmp = 'S_'
+        tmp = 'D_'
     v_losses = AverageMeter()
     v_top1 = AverageMeter()
     v_top5 = AverageMeter() 
