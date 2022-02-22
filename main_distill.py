@@ -243,7 +243,7 @@ def main(args):
 
     LP_data_loader_val = torch.utils.data.DataLoader(
         LP_dataset_val, sampler=LP_sampler_val,
-        batch_size=args.batch_size,
+        batch_size=250,
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,
         drop_last=False
