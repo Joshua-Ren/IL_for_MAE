@@ -85,7 +85,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     if teach_flag:
         tmp = 'T_'
     else:
-        tmp = 'S_'+str(epoch)
+        tmp = 'S_'
     v_losses = AverageMeter()
     v_top1 = AverageMeter()
     v_top5 = AverageMeter() 
@@ -146,9 +146,9 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 v_top1.update(v_prec1.item(), images.size(0))
                 v_top5.update(v_prec5.item(), images.size(0))
             if misc.is_main_process():
-                wandb.log({tmp+'V_loss':v_losses.avg},step=k)
-                wandb.log({tmp+'V_top1':v_top1.avg},step=k)
-                wandb.log({tmp+'V_top5':v_top5.avg},step=k)
+                wandb.log({tmp+'V_loss':v_losses.avg})
+                wandb.log({tmp+'V_top1':v_top1.avg})
+                wandb.log({tmp+'V_top5':v_top5.avg})
     del lp_model
     return (v_top1.avg, v_top5.avg)
 @torch.no_grad()

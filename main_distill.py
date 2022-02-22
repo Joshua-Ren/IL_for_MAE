@@ -322,8 +322,8 @@ def main(args):
 
     print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    results = linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
-    t_results = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
+    _ = linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
+    (t_top1, t_top5) = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
@@ -333,10 +333,13 @@ def main(args):
             optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
+        (s_top1, s_top5)=linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
         # -------- Linear Prob every epoch --------------
         linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
+            wandb.log({'GAP_TOP1':s_top1-t_top1})
+            wandb.log({'GAP_TOP5':s_top5-t_top5})
             if epoch % 25 == 0 or epoch + 1 == args.epochs:
                 misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
                 optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
