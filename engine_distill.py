@@ -111,7 +111,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
         lp_model_without_ddp = lp_model.module
     # --------- Prepare the optimizers
     #optimizer = LARS(lp_model_without_ddp.parameters(), lr=1e-4, weight_decay=args.weight_decay)
-    optimizer = torch.optim.AdamW(lp_model_without_ddp.head.parameters(), lr=1e-3)
+    optimizer = torch.optim.AdamW(lp_model_without_ddp.parameters(), lr=1e-3)
     loss_scaler = NativeScaler()
     optimizer.zero_grad()
     for epoch in range(50):
@@ -140,13 +140,13 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 labels = target.to(device, non_blocking=True)
                 with torch.cuda.amp.autocast():
                     v_logits, _ = lp_model(images)
-                    v_loss = torch.nn.CrossEntropyLoss()(logits, labels)
+                    v_loss = torch.nn.CrossEntropyLoss()(v_logits, labels)
                 v_prec1, v_prec5 = accuracy(v_logits, labels, topk=(1, 5))
                 v_losses.update(v_loss.data.item(), images.size(0))
                 v_top1.update(v_prec1.item(), images.size(0))
                 v_top5.update(v_prec5.item(), images.size(0))
             if misc.is_main_process():
-                wandb.log({tmp+'V_loss':v_losses.avg})
+                wandb.log({tmp+'V_loss':v_losses.avg,'epoch':epoch})
                 wandb.log({tmp+'V_top1':v_top1.avg})
                 wandb.log({tmp+'V_top5':v_top5.avg})
     del lp_model
