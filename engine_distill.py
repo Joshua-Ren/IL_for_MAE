@@ -123,7 +123,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 logits, _ = lp_model(samples)
                 loss = torch.nn.CrossEntropyLoss()(logits, targets)
             loss/=accum_iter
-            loss_scaler(loss, optimizer, clip_grad=max_norm,
+            loss_scaler(loss, optimizer, clip_grad=args.clip_grad,
                         parameters=lp_model.parameters(), create_graph=False,
                         update_grad=(data_iter_step + 1) % accum_iter == 0)                
             if (data_iter_step + 1) % accum_iter == 0:
