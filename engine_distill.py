@@ -90,6 +90,10 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     v_top5 = AverageMeter()    
     # ------- Prepare the model: change head, freeze other layers
     lp_model = copy.deepcopy(model)
+    if args.distributed:
+        lp_model = torch.nn.parallel.DistributedDataParallel(lp_model, device_ids=[args.gpu])
+        lp_model_without_ddp = lp_model.module
+        
     num_features = lp_model.num_features
     if args.lp_dataset=='imagenet':
         num_classes = 1000
