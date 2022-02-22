@@ -132,6 +132,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
             torch.cuda.synchronize()
             if data_iter_step%10 == 0 and misc.is_main_process():
                 wandb.log({tmp+'T_loss':loss.item()})
+        del samples
         # --- Validate linear prob
         lp_model.eval()
         with torch.no_grad():
@@ -149,6 +150,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 wandb.log({tmp+'V_loss':v_losses.avg})
                 wandb.log({tmp+'V_top1':v_top1.avg})
                 wandb.log({tmp+'V_top5':v_top5.avg})
+        del images
     del lp_model
     return (v_top1.avg, v_top5.avg)
 @torch.no_grad()
