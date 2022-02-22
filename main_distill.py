@@ -266,8 +266,8 @@ def main(args):
                                             drop_path_rate=args.drop_path,
                                             global_pool=args.global_pool,
                                             distill=True,)
-    for param in teacher.parameters():
-        param.requires_grad = False    
+    #for param in teacher.parameters():
+    #    param.requires_grad = False    
     model.to(device)
     teacher.to(device)
     model_without_ddp = model
