@@ -34,7 +34,7 @@ from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 import models_vit
-from engine_distill import train_one_epoch, evaluate
+from engine_distill import train_one_epoch, evaluate, linear_prob_evaluate
 
 
 def get_args_parser():
@@ -322,7 +322,7 @@ def main(args):
 
     print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    teach_results = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, teach_flag=True)
+    linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
