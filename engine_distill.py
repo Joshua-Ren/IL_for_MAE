@@ -110,8 +110,8 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
         lp_model = torch.nn.parallel.DistributedDataParallel(lp_model, device_ids=[args.gpu])
         lp_model_without_ddp = lp_model.module
     # --------- Prepare the optimizers
-    optimizer = LARS(lp_model_without_ddp.parameters(), lr=1e-4, weight_decay=args.weight_decay)
-    
+    #optimizer = LARS(lp_model_without_ddp.parameters(), lr=1e-4, weight_decay=args.weight_decay)
+    optimizer = torch.optim.AdamW(lp_model_without_ddp.head.parameters(), lr=1e-3)
     loss_scaler = NativeScaler()
     optimizer.zero_grad()
     for epoch in range(50):
