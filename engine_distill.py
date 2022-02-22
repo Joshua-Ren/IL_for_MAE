@@ -10,6 +10,7 @@ from otherutils import *
 import util.misc as misc
 import util.lr_sched as lr_sched
 from util.lars import LARS
+from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
 def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     # Shape of 
@@ -87,7 +88,8 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
         tmp = 'S_'
     v_losses = AverageMeter()
     v_top1 = AverageMeter()
-    v_top5 = AverageMeter()    
+    v_top5 = AverageMeter() 
+    accum_iter = args.accum_iter
     # ------- Prepare the model: change head, freeze other layers
     lp_model = copy.deepcopy(model)
     num_features = lp_model.num_features
@@ -109,6 +111,8 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
         lp_model_without_ddp = lp_model.module
     # --------- Prepare the optimizers
     optimizer = LARS(lp_model_without_ddp.head.parameters(), lr=1e-4, weight_decay=args.weight_decay)
+    loss_scaler = NativeScaler()
+    optimizer.zero_grad()
     for epoch in range(50):
         lp_model.train()
         # --- train linear prob
@@ -118,10 +122,14 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
             with torch.cuda.amp.autocast():
                 logits, _ = lp_model(samples)
                 loss = torch.nn.CrossEntropyLoss()(logits, targets)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            if misc.is_main_process():
+            loss/=accum_iter
+            loss_scaler(loss, optimizer, clip_grad=max_norm,
+                        parameters=lp_model.parameters(), create_graph=False,
+                        update_grad=(data_iter_step + 1) % accum_iter == 0)                
+            if (data_iter_step + 1) % accum_iter == 0:
+                optimizer.zero_grad()   
+            torch.cuda.synchronize()
+            if data_iter_step%10 == 0 and misc.is_main_process():
                 wandb.log({tmp+'T_loss':loss.item()})
         # --- Validate linear prob
         lp_model.eval()
