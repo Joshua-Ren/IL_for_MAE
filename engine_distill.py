@@ -77,7 +77,8 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         wandb.log({'train_top1':top1.avg})
         wandb.log({'train_top5':top5.avg})
        
-def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, teach_flag=False):
+def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
+                         device, teach_flag=False):
     # ------ deep copy the model, linear prob using multi-GPU, 
     # output test-acc, delete the model
     if teach_flag:

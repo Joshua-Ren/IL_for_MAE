@@ -322,7 +322,7 @@ def main(args):
 
     print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, teach_flag=True)
+    linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
@@ -333,7 +333,7 @@ def main(args):
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
         # -------- Linear Prob every epoch --------------
-        linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val)
+        linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
             if epoch % 25 == 0 or epoch + 1 == args.epochs:
