@@ -131,7 +131,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 labels = target.to(device, non_blocking=True)
                 with torch.cuda.amp.autocast():
                     v_logits, _ = lp_model(images)
-                    v_loss = torch.nn.CrossEntropyLoss()(logits, target)
+                    v_loss = torch.nn.CrossEntropyLoss()(logits, labels)
                 v_prec1, v_prec5 = accuracy(v_logits, labels, topk=(1, 5))
                 v_losses.update(v_loss.data.item(), images.size(0))
                 v_top1.update(v_prec1.item(), images.size(0))
