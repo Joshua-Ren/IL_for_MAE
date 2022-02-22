@@ -101,10 +101,10 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
         num_classes = 100
     lp_model.head = torch.nn.Linear(num_features, num_classes)
     lp_model.head = torch.nn.Sequential(torch.nn.BatchNorm1d(lp_model.head.in_features, affine=False, eps=1e-6), lp_model.head)
-    for _, p in lp_model.named_parameters():
-        p.requires_grad = False
-    for _, p in lp_model.head.named_parameters():
-        p.requires_grad = True
+    #for _, p in lp_model.named_parameters():
+    #    p.requires_grad = False
+    #for _, p in lp_model.head.named_parameters():
+    #    p.requires_grad = True
     lp_model.to(device)
     if args.distributed:
         lp_model = torch.nn.parallel.DistributedDataParallel(lp_model, device_ids=[args.gpu])
