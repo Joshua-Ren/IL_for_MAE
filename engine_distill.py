@@ -79,13 +79,13 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         wandb.log({'train_top5':top5.avg})
        
 def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
-                         device, teach_flag=False):
+                         device, epoch=0, teach_flag=False):
     # ------ deep copy the model, linear prob using multi-GPU, 
     # output test-acc, delete the model
     if teach_flag:
         tmp = 'T_'
     else:
-        tmp = 'S_'
+        tmp = 'S_'+str(epoch)
     v_losses = AverageMeter()
     v_top1 = AverageMeter()
     v_top5 = AverageMeter() 
@@ -114,7 +114,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     optimizer = torch.optim.AdamW(lp_model_without_ddp.parameters(), lr=1e-3)
     loss_scaler = NativeScaler()
     optimizer.zero_grad()
-    for epoch in range(50):
+    for k in range(10):
         lp_model.train()
         # --- train linear prob
         for data_iter_step, (samples, targets) in enumerate(LP_data_loader_train):
@@ -146,10 +146,11 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
                 v_top1.update(v_prec1.item(), images.size(0))
                 v_top5.update(v_prec5.item(), images.size(0))
             if misc.is_main_process():
-                wandb.log({tmp+'V_loss':v_losses.avg,'epoch':epoch})
-                wandb.log({tmp+'V_top1':v_top1.avg})
-                wandb.log({tmp+'V_top5':v_top5.avg})
+                wandb.log({tmp+'V_loss':v_losses.avg},step=k)
+                wandb.log({tmp+'V_top1':v_top1.avg},step=k)
+                wandb.log({tmp+'V_top5':v_top5.avg},step=k)
     del lp_model
+    return (v_top1.avg, v_top5.avg)
 @torch.no_grad()
 def evaluate(data_loader, model, device):
     losses = AverageMeter()

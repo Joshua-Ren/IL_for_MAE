@@ -322,7 +322,8 @@ def main(args):
 
     print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
+    results = linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val, device)
+    t_results = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
