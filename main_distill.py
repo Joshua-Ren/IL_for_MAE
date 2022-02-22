@@ -242,11 +242,11 @@ def main(args):
     )
 
     LP_data_loader_val = torch.utils.data.DataLoader(
-        LP_dataset_val, sampler=LP_sampler_val,
+        LP_dataset_val, shuffle=False,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,
-        drop_last=True
+        drop_last=True,
     )
 
     # =================== Initialize wandb ========================
