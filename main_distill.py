@@ -333,7 +333,6 @@ def main(args):
             optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
 
         train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
-        evaluate(data_loader_val, model, device)
         s_top1, s_top5=linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
         # -------- Linear Prob every epoch --------------
         if misc.is_main_process():
