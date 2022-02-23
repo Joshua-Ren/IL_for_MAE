@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_finetune.py --proj_name Finetune-CIFAR \
---run_name FT_teacher --batch_size 384 --dataset cifar100 --epochs 100 \
+--run_name FT_ep25 --batch_size 384 --dataset cifar100 --epochs 100 \
 --finetune Distill-IN1K/vit_base_patch16/cos_distill/checkpoint-25.pth
