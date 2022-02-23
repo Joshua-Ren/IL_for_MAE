@@ -33,8 +33,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     accum_iter = args.accum_iter
     optimizer.zero_grad()
 
-    model.distill = True
-
     for data_iter_step, (samples, targets) in enumerate(data_loader):
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:

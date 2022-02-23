@@ -17,9 +17,9 @@ def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     words_dim = teach_words.shape[-1]
     temper = 1.
     ratio = args.dis_ratio
-    #cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-8)
-    #teach_part = 1-cos(words, teach_words.detach()).mean()
-    teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
+    cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-8)
+    teach_part = 1-cos(words, teach_words.detach()).mean()
+    #teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
     return teach_part*ratio + (1-ratio)*label_part
 
@@ -101,6 +101,7 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     elif args.lp_dataset=='cifar100':
         num_classes = 100
     lp_model.head = torch.nn.Linear(num_features, num_classes)
+    # ---  这个可能有问题，看看下次实验时删掉。
     lp_model.head = torch.nn.Sequential(torch.nn.BatchNorm1d(lp_model.head.in_features, affine=False, eps=1e-6), lp_model.head)
     #for _, p in lp_model.named_parameters():
     #    p.requires_grad = False
