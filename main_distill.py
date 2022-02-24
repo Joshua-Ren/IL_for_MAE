@@ -74,8 +74,6 @@ def get_args_parser():
                         help='lower lr bound for cyclic schedulers that hit 0')
     parser.add_argument('--warmup_epochs', type=int, default=5, metavar='N',
                         help='epochs to warmup LR')
-    parser.add_argument('--dist_loss',type=str,default='cosine',
-                        help='distil_loss should be cls, cosine or mse')
 
     # Augmentation parameters
     parser.add_argument('--color_jitter', type=float, default=None, metavar='PCT',
@@ -86,7 +84,8 @@ def get_args_parser():
                         help='Label smoothing (default: 0.1)')
     parser.add_argument('--dis_ratio', type=float, default=1.,
                         help='1 is pure distill, 0 is pure from target')                       
-
+    parser.add_argument('--dist_loss',type=str,default='cosine',
+                        help='distil_loss should be cls, cosine or mse')
     # * Random Erase params
     parser.add_argument('--reprob', type=float, default=0.25, metavar='PCT',
                         help='Random erase prob (default: 0.25)')
@@ -297,7 +296,7 @@ def main(args):
     trunc_normal_(teacher.head.weight, std=2e-5)
     #------这句话2022-02-23加上试试，我感觉从interact后直接distill的话，还是该控制两个model的head layer比较好
     # --记录里的test_scrath和cosine_distill都没这句
-    model.head.weight = teacher.head.weight
+    #model.head.weight = teacher.head.weight
     
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     
