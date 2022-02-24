@@ -16,7 +16,7 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     # Shape of 
     words_dim = teach_words.shape[-1]
-    tau = 4.
+    tau = 1.
     ratio = args.dis_ratio
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
     if args.dist_loss=='cosine':
@@ -25,7 +25,8 @@ def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     elif args.dist_loss=='mse':
         teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
     elif args.dist_loss=='cls':
-        teach_part = torch.nn.KLDivLoss(reduction='batchmean')(F.log_softmax(logits/tau,1), F.softmax(teach_logits/tau,1))*(tau*tau * 2.0)
+    # ---- 从MAE后直接distil不能用这个，因为teach_logits根本不是logits，基本均匀分布的。。。
+        teach_part = torch.nn.KLDivLoss()(F.log_softmax(logits/tau,1), F.softmax(teach_logits/tau,1))*(tau*tau * 2.0)
     return teach_part*ratio + (1-ratio)*label_part
 
 
