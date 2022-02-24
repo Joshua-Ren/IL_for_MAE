@@ -1,6 +1,7 @@
 import math
 import sys
 from typing import Iterable, Optional
+import torch.nn.functional as F
 import wandb
 import torch
 import copy
@@ -15,12 +16,16 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     # Shape of 
     words_dim = teach_words.shape[-1]
-    temper = 1.
+    tau = 4.
     ratio = args.dis_ratio
-    cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-8)
-    teach_part = 1-cos(words, teach_words.detach()).mean()
-    #teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
+    if args.dist_loss=='cosine':
+        cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-8)
+        teach_part = 1-cos(words, teach_words.detach()).mean()
+    elif args.dist_loss=='mse':
+        teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
+    elif args.dist_loss=='cls':
+        teach_part = torch.nn.KLDivLoss(reduction='batchmean')(F.log_softmax(logits/tau,1), F.softmax(teach_logits/tau,1))*(tau*tau * 2.0)
     return teach_part*ratio + (1-ratio)*label_part
 
 
