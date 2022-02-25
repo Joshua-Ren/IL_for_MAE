@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_distill.py --proj_name Distill-IN1K \
---run_name cos_distill_noBN1d --batch_size 128 --dataset imagenet --epochs 50 --dis_ratio 1.0 --dist_loss cosine \
+--run_name cos_distill_check --batch_size 128 --dataset imagenet --epochs 50 --dis_ratio 1.0 --dist_loss cosine \
 --teach_ckp Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-399.pth

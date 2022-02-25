@@ -107,8 +107,8 @@ def linear_prob_evaluate(args, model, LP_data_loader_train, LP_data_loader_val,
     elif args.lp_dataset=='cifar100':
         num_classes = 100
     lp_model.head = torch.nn.Linear(num_features, num_classes)
-    # ---  这个可能有问题，看看下次实验时删掉。
-    #lp_model.head = torch.nn.Sequential(torch.nn.BatchNorm1d(lp_model.head.in_features, affine=False, eps=1e-6), lp_model.head)
+    # ---  这个可能有问题，看看下次实验时删掉。删了没有先上后下了。。。恢复吧。
+    lp_model.head = torch.nn.Sequential(torch.nn.BatchNorm1d(lp_model.head.in_features, affine=False, eps=1e-6), lp_model.head)
     #for _, p in lp_model.named_parameters():
     #    p.requires_grad = False
     #for _, p in lp_model.head.named_parameters():
