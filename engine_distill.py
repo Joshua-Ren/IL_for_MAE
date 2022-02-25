@@ -20,7 +20,7 @@ def distill_loss(teach_logits, teach_words, logits, words, targets, args):
     ratio = args.dis_ratio
     label_part = torch.nn.CrossEntropyLoss()(logits, targets)
     if args.dist_loss=='cosine':
-        cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-8)
+        cos = torch.nn.CosineSimilarity(dim=-1, eps=1e-6)
         teach_part = 1-cos(words, teach_words.detach()).mean()
     elif args.dist_loss=='mse':
         teach_part = torch.nn.MSELoss(reduction='mean')(words,teach_words).mean()
