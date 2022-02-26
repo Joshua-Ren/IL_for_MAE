@@ -187,7 +187,7 @@ def main(args):
             if args.distributed:
                 data_loader_train.sampler.set_epoch(de_epoch)
             train_one_epoch(model, data_loader_train, optimizer_DE, 
-                            device, de_epoch, loss_scaler, args=args, const_lr=True)                
+                            device, de_epoch, de_loss_scaler, args=args, const_lr=True)                
             if misc.is_main_process():
                 _recon_validate(TRACK_TVX, model, table_key='last')
                 wandb.log({'epoch':epoch})               
