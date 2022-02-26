@@ -189,7 +189,7 @@ def main(args):
             train_one_epoch(model, data_loader_train, optimizer_DE, 
                             device, de_epoch, de_loss_scaler, args=args, const_lr=True)                
             if misc.is_main_process():
-                _recon_validate(TRACK_TVX, model, table_key='latest')
+                _recon_validate(TRACK_TVX, model, table_key='de_latest')
                 wandb.log({'epoch':de_epoch})               
         # ----- defreeze encoder and re-create the DDP
         defreeze_en_mae(model_without_ddp)
@@ -218,7 +218,7 @@ def main(args):
         if misc.is_main_process():
             _recon_validate(TRACK_TVX, model, table_key='latest')
             wandb.log({'epoch':epoch})
-        if epoch % 20 == 0 or epoch + 1 == args.epochs:
+        if epoch % 20 == 0 or epoch + 1 == args.de_epochs+args.en_epochs:
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)
