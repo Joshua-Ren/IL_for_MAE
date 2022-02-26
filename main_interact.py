@@ -101,7 +101,7 @@ def get_args_parser():
     parser.add_argument('--first_gen', action='store_false')
     parser.set_defaults(first_gen=False)   # If this is first generation, no DE pre-train and EN load ckp 
     parser.add_argument('--en_epochs', default=100, type=int)
-    parser.add_argument('--warmup', type=int, default=10, metavar='N',
+    parser.add_argument('--warmup_epochs', type=int, default=10, metavar='N',
                         help='epochs to warmup LR in EN training')
     parser.add_argument('--de_epochs', default=20,type=int)
     parser.add_argument('--en_ckp', default=None, type=str,
