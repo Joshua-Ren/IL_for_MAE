@@ -101,7 +101,7 @@ def get_args_parser():
     parser.add_argument('--first_gen', action='store_false')
     parser.set_defaults(first_gen=False)   # If this is first generation, no DE pre-train and EN load ckp 
     parser.add_argument('--en_epochs', default=100, type=int)
-    parser.add_argument('--en_warmup', type=int, default=10, metavar='N',
+    parser.add_argument('--warmup', type=int, default=10, metavar='N',
                         help='epochs to warmup LR in EN training')
     parser.add_argument('--de_epochs', default=20,type=int)
     parser.add_argument('--en_ckp', default=None, type=str,
@@ -189,7 +189,7 @@ def main(args):
             train_one_epoch(model, data_loader_train, optimizer_DE, 
                             device, de_epoch, de_loss_scaler, args=args, const_lr=True)                
             if misc.is_main_process():
-                _recon_validate(TRACK_TVX, model, table_key='last')
+                _recon_validate(TRACK_TVX, model, table_key='latest')
                 wandb.log({'epoch':de_epoch})               
         # ----- defreeze encoder and re-create the DDP
         defreeze_en_mae(model_without_ddp)
@@ -216,7 +216,7 @@ def main(args):
             optimizer, device, epoch, loss_scaler,
             args=args)
         if misc.is_main_process():
-            _recon_validate(TRACK_TVX, model, table_key='last')
+            _recon_validate(TRACK_TVX, model, table_key='latest')
             wandb.log({'epoch':epoch})
         if epoch % 20 == 0 or epoch + 1 == args.epochs:
             misc.save_model(
