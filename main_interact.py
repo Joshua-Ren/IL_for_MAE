@@ -163,7 +163,7 @@ def main(args):
     if args.lr is None:  # only base_lr is specified
         args.lr = args.blr * eff_batch_size / 256    
     
-    if not first_gen and args.en_ckp is not None:
+    if not args.first_gen and args.en_ckp is not None:
         ckp_path = base_folder + 'results/' + args.en_ckp
         checkpoint = torch.load(ckp_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
