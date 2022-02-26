@@ -19,15 +19,16 @@ import util.lr_sched as lr_sched
 
 def train_one_epoch(model: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, loss_scaler,args=None):
+                    device: torch.device, epoch: int, loss_scaler,args=None, const_lr=False):
     model.train(True)
     accum_iter = args.accum_iter
     optimizer.zero_grad()
 
     for data_iter_step, (samples, _) in enumerate(data_loader):
         # we use a per iteration (instead of per epoch) lr scheduler
-        if data_iter_step % accum_iter == 0:
-            lr_sched.adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, args)
+        if not const_lr:
+            if data_iter_step % accum_iter == 0:
+                lr_sched.adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, args)
         samples = samples.to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():

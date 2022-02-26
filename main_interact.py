@@ -35,14 +35,13 @@ import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_mae
 
-from engine_pretrain import train_one_epoch
+from engine_interact import train_one_epoch
 
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
     parser.add_argument('--batch_size', default=64, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
-    parser.add_argument('--epochs', default=400, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
@@ -71,9 +70,6 @@ def get_args_parser():
     parser.add_argument('--min_lr', type=float, default=0., metavar='LR',
                         help='lower lr bound for cyclic schedulers that hit 0')
 
-    parser.add_argument('--warmup_epochs', type=int, default=40, metavar='N',
-                        help='epochs to warmup LR')
-
     # Dataset parameters
     parser.add_argument('--run_name',default=None,type=str)
     parser.add_argument('--proj_name',default='Interact_MAE', type=str)
@@ -82,9 +78,7 @@ def get_args_parser():
                         help='path where to save, empty for no saving')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
-    parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--resume', default='',
-                        help='resume from checkpoint')
+    parser.add_argument('--seed', default=10086, type=int)
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
@@ -101,9 +95,17 @@ def get_args_parser():
     parser.add_argument('--dist_on_itp', action='store_true')
     parser.add_argument('--dist_url', default='env://',
                         help='url used to set up distributed training')
-
+    
+    # interact control parameters
+    parser.add_argument('--first_gen', action='store_false')
+    parser.set_defaults(first_gen=False)   # If this is first generation, no DE pre-train and EN load ckp 
+    parser.add_argument('--en_epochs', default=100, type=int)
+    parser.add_argument('--en_warmup', type=int, default=10, metavar='N',
+                        help='epochs to warmup LR in EN training')
+    parser.add_argument('--de_epochs', default=20,type=int)
+    parser.add_argument('--en_ckp', default=None, type=str,
+                        help='path and name of en checkpoint')
     return parser
-
 
 def main(args):
     # ================= Prepare for distributed training =====
@@ -156,25 +158,57 @@ def main(args):
     # ================== Create the model: mae ==================
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
-    model.to(device)
-    model_without_ddp = model
-
+        # Load en-parameters if not first generation
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     if args.lr is None:  # only base_lr is specified
-        args.lr = args.blr * eff_batch_size / 256
+        args.lr = args.blr * eff_batch_size / 256    
+    
+    if not first_gen and args.en_ckp is not None:
+        ckp_path = base_folder + 'results/' + args.en_ckp
+        checkpoint = torch.load(ckp_path, map_location='cpu')
+        checkpoint_model = checkpoint['model']
+        # interpolate position embedding
+        interpolate_pos_embed(model, checkpoint_model)        
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        print(msg)      
+        freeze_en_mae(model, msg)
+        model.to(device)
+        model_without_ddp = model
+        if args.distributed:
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
+            model_without_ddp = model.module
+        param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
+        # ----- Pre-train the decoder for some epochs
+        optimizer_DE = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
+        de_loss_scaler = NativeScaler()
+        
+        for de_epoch in range(args.de_epochs):
+            if args.distributed:
+                data_loader_train.sampler.set_epoch(de_epoch)
+            train_one_epoch(model, data_loader_train, optimizer_DE, 
+                            device, de_epoch, loss_scaler, args=args, const_lr=True)                
+            if misc.is_main_process():
+                _recon_validate(TRACK_TVX, model, table_key='last')
+                wandb.log({'epoch':epoch})               
+        # ----- defreeze encoder and re-create the DDP
+        defreeze_en_mae(model_without_ddp)
+        if args.distributed:
+            model = torch.nn.parallel.DistributedDataParallel(model_without_ddp, device_ids=[args.gpu], find_unused_parameters=True)
+            model_without_ddp = model.module           
+    else:
+        model.to(device)
+        model_without_ddp = model
+        if args.distributed:
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
+            model_without_ddp = model.module
 
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
-        model_without_ddp = model.module
+    # ================= Train the model ===========================    
     # following timm: set wd as 0 for bias and norm layers
-    param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
+    param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay) 
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
-
-    misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
-
-    # ================= Train the model ===========================
-    for epoch in range(args.start_epoch, args.epochs):
+    
+    for epoch in range(args.de_epochs, args.de_epochs+args.en_epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
         train_one_epoch(model, data_loader_train,
@@ -183,7 +217,7 @@ def main(args):
         if misc.is_main_process():
             _recon_validate(TRACK_TVX, model, table_key='last')
             wandb.log({'epoch':epoch})
-        if epoch % 50 == 0 or epoch + 1 == args.epochs:
+        if epoch % 20 == 0 or epoch + 1 == args.epochs:
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)

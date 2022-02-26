@@ -19,5 +19,5 @@ source /home/sg955/egg-env/bin/activate
 
 cd /home/sg955/GitWS/IL_for_MAE/
 
-srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_pretrain.py \
---run_name offi_4GPU_smallDE400 --batch_size 384 --epochs 400
+srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_interact.py --first_gen \
+--run_name try_code --batch_size 384 --en_epochs 400
