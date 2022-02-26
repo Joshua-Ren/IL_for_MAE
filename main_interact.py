@@ -190,7 +190,7 @@ def main(args):
                             device, de_epoch, de_loss_scaler, args=args, const_lr=True)                
             if misc.is_main_process():
                 _recon_validate(TRACK_TVX, model, table_key='last')
-                wandb.log({'epoch':epoch})               
+                wandb.log({'epoch':de_epoch})               
         # ----- defreeze encoder and re-create the DDP
         defreeze_en_mae(model_without_ddp)
         if args.distributed:
