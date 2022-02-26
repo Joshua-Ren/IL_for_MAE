@@ -209,7 +209,7 @@ def main(args):
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     
-    for epoch in range(args.de_epochs, args.de_epochs+args.epochs):
+    for epoch in range(args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
         train_one_epoch(model, data_loader_train,
@@ -217,7 +217,7 @@ def main(args):
             args=args)
         if misc.is_main_process():
             _recon_validate(TRACK_TVX, model, table_key='latest')
-            wandb.log({'epoch':epoch})
+            wandb.log({'epoch':epoch+args.de_epochs})
         if epoch % 10 == 0 or epoch + 1 == args.de_epochs+args.epochs:
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
