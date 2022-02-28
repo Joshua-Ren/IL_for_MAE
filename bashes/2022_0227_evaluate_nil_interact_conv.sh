@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_finetune.py --proj_name Finetune-IN1K \
---run_name nil_int400_dis50_int95_converge --batch_size 384 --dataset imagenet --epochs 100 \
---finetune Interact_MAE/mae_vit_base_patch16_smallde/int400_dis50_int95/checkpoint-80.pth
+--run_name nil_int400_dis30_int95_converge --batch_size 384 --dataset imagenet --epochs 100 \
+--finetune Interact_MAE/mae_vit_base_patch16_smallde/int400_dis30_int95/checkpoint-89.pth
