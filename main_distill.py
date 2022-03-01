@@ -235,7 +235,7 @@ def main(args):
     # ------- Before distill, calculate teacher's results
     if misc.is_main_process():   
         misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
-        optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
+        optimizer=optimizer, loss_scaler=loss_scaler, epoch=0, flag_start=True)
         
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
