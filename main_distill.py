@@ -50,7 +50,9 @@ def get_args_parser():
 
     parser.add_argument('--teachmodel', default='vit_base_patch16', type=str, metavar='MODEL',
                         help='Name of teachmodel to train')
-
+    parser.add_argument('--mask_ratio', default=0.75, type=float,
+                        help='Masking ratio (percentage of removed patches).')
+                        
     parser.add_argument('--input_size', default=224, type=int,
                         help='images input size')
 
