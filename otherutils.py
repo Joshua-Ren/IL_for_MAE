@@ -38,7 +38,7 @@ def freeze_en_mae(model,msg):
         if name in ['mask_token']:
             param.requires_grad = True
 
-def freeze_de_mae(model,msg):
+def freeze_de_mae(model):
     for name, param in model.named_parameters():
         if name not in ['pos_embed', 'decoder_pos_embed']:
             if name.startswith('decode'):

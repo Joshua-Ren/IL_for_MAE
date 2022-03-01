@@ -206,6 +206,8 @@ def main(args):
     # ================== Create the model: ViT ==================
     model = models_mae.__dict__[args.model]()
     teacher = models_mae.__dict__[args.model]()
+    freeze_de_mae(model)
+    freeze_de_mae(teacher)
     #for param in teacher.parameters():
     #    param.requires_grad = False    
     model.to(device)
