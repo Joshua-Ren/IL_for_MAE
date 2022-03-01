@@ -17,16 +17,33 @@ WANDB_track_figs = 6
 base_folder = '/home/sg955/rds/rds-nlp-cdt-VR7brx3H4V8/IL_for_MAE/'
 
 # ------------- Helper function for NIL
+'''
+# ------ Old version for freeze/defreeze, when MAE model load params from ViT model
 def freeze_en_mae(model, msg):
     for name, param in model.named_parameters():
         if name in msg.missing_keys:
             param.requires_grad = True
         else:
             param.requires_grad = False
+'''
+def freeze_en_mae(model,msg):
+    for name, param in model.named_parameters():
+        if name not in ['pos_embed', 'decoder_pos_embed']:
+            if name.startswith('decode'):
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+        else:
+            param.requires_grad = False   
+        if name in ['mask_token']:
+            param.requires_grad = True
 
 def defreeze_en_mae(model):
     for name, param in model.named_parameters():
-        param.requires_grad = True
+        if name not in ['pos_embed', 'decoder_pos_embed']:
+            param.requires_grad = True
+        else:
+            param.requires_grad = False
 
 
 
