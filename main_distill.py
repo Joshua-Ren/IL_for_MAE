@@ -45,7 +45,7 @@ def get_args_parser():
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
     # Model parameters
-    parser.add_argument('--model', default='vit_base_patch16', type=str, metavar='MODEL',
+    parser.add_argument('--model', default='mae_vit_base_patch16_smallde', type=str, metavar='MODEL',
                         help='Name of model to train')
 
     parser.add_argument('--teachmodel', default='vit_base_patch16', type=str, metavar='MODEL',
