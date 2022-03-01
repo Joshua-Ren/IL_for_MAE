@@ -39,9 +39,9 @@ def train_one_epoch(model: torch.nn.Module, teacher: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            teach_words, mask, ids = teacher.forward_encoder(samples, args.mask_ratio)
+            teach_words, mask, ids = teacher.module.forward_encoder(samples, args.mask_ratio)
             mask_ids = (mask, ids)
-            stud_words, _, _ = model.forward_encoder(samples, args.mask_ratio, mask_ids)
+            stud_words, _, _ = model.module.forward_encoder(samples, args.mask_ratio, mask_ids)
             loss = distill_cos_loss(teach_words, stud_words, args)
         loss_value = loss.item()
 
