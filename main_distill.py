@@ -193,35 +193,6 @@ def main(args):
         drop_last=False
     )
 
-    # ================== Prepare for the linear prob dataloader ===============
-    LP_dataset_train = build_dataset(is_train=True, args=args, force_dataset=args.lp_dataset)
-    LP_dataset_val = build_dataset(is_train=False, args=args, force_dataset=args.lp_dataset)
-
-    if True:  # args.distributed:
-        LP_sampler_train = torch.utils.data.DistributedSampler(
-            LP_dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True)
-        LP_sampler_val = torch.utils.data.SequentialSampler(dataset_val)
-    else:
-        LP_sampler_train = torch.utils.data.RandomSampler(LP_dataset_train)
-        LP_sampler_val = torch.utils.data.SequentialSampler(LP_dataset_val)
-
-    # ================== Prepare for the dataloader ===============
-    LP_data_loader_train = torch.utils.data.DataLoader(
-        LP_dataset_train, sampler=LP_sampler_train,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=args.pin_mem,
-        drop_last=True,
-    )
-
-    LP_data_loader_val = torch.utils.data.DataLoader(
-        LP_dataset_val, shuffle=False,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=args.pin_mem,
-        drop_last=True,
-    )
-
     # =================== Initialize wandb ========================
     if misc.is_main_process():
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
@@ -256,11 +227,8 @@ def main(args):
         model_without_ddp = model.module
 
     # build optimizer with layer-wise lr decay (lrd)
-    param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay,
-        no_weight_decay_list=model_without_ddp.no_weight_decay(),
-        layer_decay=args.layer_decay
-    )
-    optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
+    param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay)
+    optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     #optimizer = torch.optim.SGD(param_groups, lr=args.lr)
     loss_scaler = NativeScaler()
 
