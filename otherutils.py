@@ -26,7 +26,7 @@ def freeze_en_mae(model, msg):
         else:
             param.requires_grad = False
 '''
-def freeze_en_mae(model,msg):
+def freeze_en_mae(model):
     for name, param in model.named_parameters():
         if name not in ['pos_embed', 'decoder_pos_embed']:
             if name.startswith('decode'):

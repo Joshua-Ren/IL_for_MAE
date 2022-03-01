@@ -172,7 +172,7 @@ def main(args):
         interpolate_pos_embed(model, checkpoint_model)        
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)      
-        freeze_en_mae(model, msg)
+        freeze_en_mae(model)
         model.to(device)
         model_without_ddp = model
         if args.distributed:
