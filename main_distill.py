@@ -23,7 +23,6 @@ import timm
 
 assert timm.__version__ == "0.3.2" # version check
 from timm.models.layers import trunc_normal_
-from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 
 from otherutils import *
@@ -81,9 +80,7 @@ def get_args_parser():
     parser.add_argument('--aa', type=str, default='rand-m9-mstd0.5-inc1', metavar='NAME',
                         help='Use AutoAugment policy. "v0" or "original". " + "(default: rand-m9-mstd0.5-inc1)'),
     parser.add_argument('--smoothing', type=float, default=0.1,
-                        help='Label smoothing (default: 0.1)')
-    parser.add_argument('--dis_ratio', type=float, default=1.,
-                        help='1 is pure distill, 0 is pure from target')                       
+                        help='Label smoothing (default: 0.1)')                   
     parser.add_argument('--dist_loss',type=str,default='cosine',
                         help='distil_loss should be cls, cosine or mse')
     # * Random Erase params
@@ -95,20 +92,6 @@ def get_args_parser():
                         help='Random erase count (default: 1)')
     parser.add_argument('--resplit', action='store_true', default=False,
                         help='Do not random erase first (clean) augmentation split')
-
-    # * Mixup params
-    parser.add_argument('--mixup', type=float, default=0,
-                        help='mixup alpha, mixup enabled if > 0.')
-    parser.add_argument('--cutmix', type=float, default=0,
-                        help='cutmix alpha, cutmix enabled if > 0.')
-    parser.add_argument('--cutmix_minmax', type=float, nargs='+', default=None,
-                        help='cutmix min/max ratio, overrides alpha and enables cutmix if set (default: None)')
-    parser.add_argument('--mixup_prob', type=float, default=1.0,
-                        help='Probability of performing mixup or cutmix when either/both is enabled')
-    parser.add_argument('--mixup_switch_prob', type=float, default=0.5,
-                        help='Probability of switching to cutmix when both mixup and cutmix enabled')
-    parser.add_argument('--mixup_mode', type=str, default='batch',
-                        help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # * Finetuning params
     parser.add_argument('--teach_ckp', default='',
@@ -210,15 +193,6 @@ def main(args):
         drop_last=False
     )
 
-    mixup_fn = None
-    mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
-    if mixup_active:
-        print("Mixup is activated!")
-        mixup_fn = Mixup(
-            mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
-            prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
-            label_smoothing=args.smoothing, num_classes=args.nb_classes)
-    
     # ================== Prepare for the linear prob dataloader ===============
     LP_dataset_train = build_dataset(is_train=True, args=args, force_dataset=args.lp_dataset)
     LP_dataset_val = build_dataset(is_train=False, args=args, force_dataset=args.lp_dataset)
@@ -257,14 +231,8 @@ def main(args):
             os.makedirs(save_path)
 
     # ================== Create the model: ViT ==================
-    model = models_vit.__dict__[args.model](num_classes=args.nb_classes,
-                                            drop_path_rate=args.drop_path,
-                                            global_pool=args.global_pool,
-                                            distill=True,)
-    teacher = models_vit.__dict__[args.teachmodel](num_classes=args.nb_classes,
-                                            drop_path_rate=args.drop_path,
-                                            global_pool=args.global_pool,
-                                            distill=True,)
+    model = models_mae.__dict__[args.model]()
+    teacher = models_mae.__dict__[args.model]()
     #for param in teacher.parameters():
     #    param.requires_grad = False    
     model.to(device)
@@ -276,28 +244,8 @@ def main(args):
     checkpoint = torch.load(ckp_path, map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = teacher.state_dict()
-    for k in ['head.weight', 'head.bias']:
-        if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-            print(f"Removing key {k} from pretrained checkpoint")
-            del checkpoint_model[k]
-
-    # interpolate position embedding
-    interpolate_pos_embed(teacher, checkpoint_model)
-
     # load pre-trained model
     msg = teacher.load_state_dict(checkpoint_model, strict=False)
-    print(msg)
-    if args.global_pool:
-        assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
-    else:
-        assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
-    # manually initialize fc layer
-    trunc_normal_(model.head.weight, std=2e-5)
-    trunc_normal_(teacher.head.weight, std=2e-5)
-    #------这句话2022-02-23加上试试，我感觉从interact后直接distill的话，还是该控制两个model的head layer比较好
-    # --记录里的test_scrath和cosine_distill都没这句
-    #model.head.weight = teacher.head.weight
-    
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     
     if args.lr is None:  # only base_lr is specified
@@ -316,31 +264,18 @@ def main(args):
     #optimizer = torch.optim.SGD(param_groups, lr=args.lr)
     loss_scaler = NativeScaler()
 
-    misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
-
-    if args.eval:
-        test_stats = evaluate(data_loader_val, model, device)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-        exit(0)
-
-    print(f"Start training for {args.epochs} epochs")
     # ------- Before distill, calculate teacher's results
-    #t_top1, t_top5 = linear_prob_evaluate(args, teacher, LP_data_loader_train, LP_data_loader_val, device, teach_flag=True)
+    if misc.is_main_process():   
+        misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
+        optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
+        
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             data_loader_train.sampler.set_epoch(epoch)
-            
-        if misc.is_main_process():   
-            misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
-            optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, flag_start=True)
-
-        train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
-        #s_top1, s_top1=linear_prob_evaluate(args, model_without_ddp, LP_data_loader_train, LP_data_loader_val, device)
+        train_one_epoch(model, teacher, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, args=args)
         # -------- Linear Prob every epoch --------------
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
-            #wandb.log({'GAP_TOP1':s_top1-t_top1})
-            #wandb.log({'GAP_TOP5':s_top5-t_top5})
             if epoch % 5 == 0 or epoch + 1 == args.epochs:
                 misc.save_model(args=args, model=model, model_without_ddp=model_without_ddp, 
                 optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch)
