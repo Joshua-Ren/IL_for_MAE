@@ -31,7 +31,7 @@ import util.misc as misc
 from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-
+import models_mae
 import models_vit
 from engine_distill import train_one_epoch
 
