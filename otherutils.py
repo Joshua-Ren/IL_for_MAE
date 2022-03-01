@@ -38,6 +38,18 @@ def freeze_en_mae(model,msg):
         if name in ['mask_token']:
             param.requires_grad = True
 
+def freeze_de_mae(model,msg):
+    for name, param in model.named_parameters():
+        if name not in ['pos_embed', 'decoder_pos_embed']:
+            if name.startswith('decode'):
+                param.requires_grad = False
+            else:
+                param.requires_grad = True
+        else:
+            param.requires_grad = False   
+        if name in ['mask_token']:
+            param.requires_grad = False
+
 def defreeze_en_mae(model):
     for name, param in model.named_parameters():
         if name not in ['pos_embed', 'decoder_pos_embed']:
