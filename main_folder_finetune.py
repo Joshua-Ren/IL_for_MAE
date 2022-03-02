@@ -159,8 +159,7 @@ def get_args_parser():
 
 def main(args):
     # ================= Prepare for distributed training =====
-    if args.wandb_flag==False:
-        misc.init_distributed_mode(args)
+    misc.init_distributed_mode(args)
     device = torch.device(args.device)
     # fix the seed for reproducibility
     seed = args.seed + misc.get_rank()
@@ -169,8 +168,7 @@ def main(args):
     cudnn.benchmark = True
     
     # =================== Initialize wandb ========================
-    if misc.is_main_process() and args.wandb_flag==False:
-        args.wandb_flag=True
+    if misc.is_main_process():
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
         args.output_dir = save_path
@@ -225,17 +223,20 @@ def main(args):
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
+            
+    if args.lr is None:  # only base_lr is specified
+        args.lr = args.blr * eff_batch_size / 256
     
-    # ================== Create the model: ViT ==================
-    model = models_vit.__dict__[args.model](
-        num_classes=args.nb_classes,
-        drop_path_rate=args.drop_path,
-        global_pool=args.global_pool,
-    )
+    ckp_folder = base_folder + 'results/'+args.ft_folder
+    
+    for ckp in os.listdir(ckp_folder):
+        model = models_vit.__dict__[args.model](
+            num_classes=args.nb_classes,
+            drop_path_rate=args.drop_path,
+            global_pool=args.global_pool,)
+        ckp_path = os.path.join(ckp_folder,ckp)
+        args.ckp_name = ckp.split('-')[1].split('.')[0]
             # ----- Load the checkpoint
-    if args.finetune and not args.eval:
-        ckp_path = args.finetune
-        #ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
         checkpoint = torch.load(ckp_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
@@ -243,74 +244,49 @@ def main(args):
             if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
                 print(f"Removing key {k} from pretrained checkpoint")
                 del checkpoint_model[k]
-
         # interpolate position embedding
         interpolate_pos_embed(model, checkpoint_model)
-
         # load pre-trained model
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)
-
-        #if args.global_pool:
-        #    assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
-        #else:
-        #    assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
-
         # manually initialize fc layer
         trunc_normal_(model.head.weight, std=2e-5)
+        model.to(device)
+        model_without_ddp = model
 
-    model.to(device)
-    model_without_ddp = model
-
-    eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
-    
-    if args.lr is None:  # only base_lr is specified
-        args.lr = args.blr * eff_batch_size / 256
-
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-        model_without_ddp = model.module
-
-    # build optimizer with layer-wise lr decay (lrd)
-    param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay,
-        no_weight_decay_list=model_without_ddp.no_weight_decay(),
-        layer_decay=args.layer_decay
-    )
-    optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
-    loss_scaler = NativeScaler()
-
-    if mixup_fn is not None:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif args.smoothing > 0.:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
-
-    print("criterion = %s" % str(criterion))
-
-    #misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
-
-    if args.eval:
-        test_stats = evaluate(data_loader_val, model, device)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-        exit(0)
-
-    print(f"Start training for {args.epochs} epochs")
-    start_time = time.time()
-    max_accuracy = 0.0
-    for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
-            data_loader_train.sampler.set_epoch(epoch)
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+            model_without_ddp = model.module
 
-        train_one_epoch(model, criterion, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
-        vtop1, vtop5 = evaluate(data_loader_val, model, device)
-        if misc.is_main_process():
-            wandb.log({'epoch':epoch})
+        # build optimizer with layer-wise lr decay (lrd)
+        param_groups = lrd.param_groups_lrd(model_without_ddp, args.weight_decay,
+            no_weight_decay_list=model_without_ddp.no_weight_decay(),
+            layer_decay=args.layer_decay)
+        optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
+        loss_scaler = NativeScaler()
+
+        if mixup_fn is not None:
+            # smoothing is handled with mixup label transform
+            criterion = SoftTargetCrossEntropy()
+        elif args.smoothing > 0.:
+            criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+        else:
+            criterion = torch.nn.CrossEntropyLoss()
+
+        print("criterion = %s" % str(criterion))
+
+        max_accuracy = 0.0
+        for epoch in range(args.start_epoch, args.epochs):
+            if args.distributed:
+                data_loader_train.sampler.set_epoch(epoch)
+            train_one_epoch(model, criterion, data_loader_train, optimizer, device, epoch, loss_scaler, args.clip_grad, mixup_fn, args=args)
+            vtop1, vtop5 = evaluate(data_loader_val, model, device)
+            if misc.is_main_process():
+                wandb.log({'epoch':epoch})
     if misc.is_main_process():
         wandb.log({'all_top1':vtop1})
         wandb.log({'all_top5':vtop5})
-    return vtop1, vtop5
+
 if __name__ == '__main__':
     args = get_args_parser()
     args = args.parse_args()
@@ -318,9 +294,4 @@ if __name__ == '__main__':
         args.nb_classes=200
     elif args.dataset=='cifar100':
         args.nb_class=100
-    args.wandb_flag=False 
-    ckp_folder = base_folder + 'results/'+args.ft_folder
-    for ckp in os.listdir(ckp_folder):
-        args.finetune = os.path.join(ckp_folder,ckp)
-        args.ckp_name = ckp.split('-')[1].split('.')[0]
-        vtop1, vtop5 = main(args)
+    main(args)   
