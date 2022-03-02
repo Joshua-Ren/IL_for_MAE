@@ -70,7 +70,8 @@ def get_args_parser():
                         help='base learning rate: absolute_lr = base_lr * total_batch_size / 256')
     parser.add_argument('--min_lr', type=float, default=0., metavar='LR',
                         help='lower lr bound for cyclic schedulers that hit 0')
-
+    parser.add_argument('--enlr_ratio', type=float, default=.25,
+                        help='en lr is lr*enlr_ratio')
     # Dataset parameters
     parser.add_argument('--run_name',default=None,type=str)
     parser.add_argument('--proj_name',default='Interact_MAE', type=str)
@@ -206,7 +207,7 @@ def main(args):
     # ================= Train the model ===========================    
     # following timm: set wd as 0 for bias and norm layers
     param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay) 
-    optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
+    optimizer = torch.optim.AdamW(param_groups, lr=args.lr*args.enlr_ratio, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     
     for epoch in range(args.epochs):
