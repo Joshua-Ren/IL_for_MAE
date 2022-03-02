@@ -167,6 +167,15 @@ def main(args):
     np.random.seed(seed)
     cudnn.benchmark = True
     
+    # =================== Initialize wandb ========================
+    if misc.is_main_process() and args.wandb_flag=False:
+        args.wandb_flag=True
+        run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
+        save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
+        args.output_dir = save_path
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+    
     # ================== Prepare for the dataloader ===============
     dataset_train = build_dataset(is_train=True, args=args)
     dataset_val = build_dataset(is_train=False, args=args)
@@ -305,14 +314,7 @@ if __name__ == '__main__':
         args.nb_classes=200
     elif args.dataset=='cifar100':
         args.nb_class=100
-    # =================== Initialize wandb ========================
-    if misc.is_main_process():
-        run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
-        save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
-        args.output_dir = save_path
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-            
+    args.wandb_flag=False 
     ckp_folder = base_folder + 'results/'+args.ft_folder
     for ckp in os.listdir(ckp_folder):
         args.finetune = os.path.join(ckp_folder,ckp)
