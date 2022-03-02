@@ -157,7 +157,7 @@ def get_args_parser():
     return parser
 
 
-def main(args,n_ckp):
+def main(args):
     # ================= Prepare for distributed training =====
     misc.init_distributed_mode(args)
     device = torch.device(args.device)
