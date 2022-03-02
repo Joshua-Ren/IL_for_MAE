@@ -206,8 +206,9 @@ def main(args):
 
     # ================= Train the model ===========================    
     # following timm: set wd as 0 for bias and norm layers
+    args.lr = args.lr*args.enlr_ratio
     param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay) 
-    optimizer = torch.optim.AdamW(param_groups, lr=args.lr*args.enlr_ratio, betas=(0.9, 0.95))
+    optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     
     for epoch in range(args.epochs):
