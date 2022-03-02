@@ -168,7 +168,7 @@ def main(args):
     cudnn.benchmark = True
     
     # =================== Initialize wandb ========================
-    if misc.is_main_process() and args.wandb_flag=False:
+    if misc.is_main_process() and args.wandb_flag==False:
         args.wandb_flag=True
         run_name = wandb_init(proj_name=args.proj_name, run_name=args.run_name, config_args=args)
         save_path = base_folder+'results/'+args.proj_name+'/'+args.model+'/'+run_name
