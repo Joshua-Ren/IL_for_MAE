@@ -223,7 +223,8 @@ def main(args):
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
-            
+    
+    eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()    
     if args.lr is None:  # only base_lr is specified
         args.lr = args.blr * eff_batch_size / 256
     
