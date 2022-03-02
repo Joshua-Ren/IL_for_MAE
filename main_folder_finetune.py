@@ -242,6 +242,7 @@ def main(args):
         ckp = FILE_LIST[i]
         ckp_path = os.path.join(ckp_folder,ckp)
         ckp_name = ckp.split('-')[1].split('.')[0]
+        wandb.log({'curr_epoch':int(ckp_name)})
             # ----- Load the checkpoint
         checkpoint = torch.load(ckp_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
