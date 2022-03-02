@@ -284,9 +284,9 @@ def main(args):
             vtop1, vtop5 = evaluate(data_loader_val, model, device)
             if misc.is_main_process():
                 wandb.log({'epoch':epoch})
-    if misc.is_main_process():
-        wandb.log({'all_top1':vtop1})
-        wandb.log({'all_top5':vtop5})
+        if misc.is_main_process():
+            wandb.log({'all_top1':vtop1})
+            wandb.log({'all_top5':vtop5})
 
 if __name__ == '__main__':
     args = get_args_parser()
