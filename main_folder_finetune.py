@@ -306,6 +306,9 @@ def main(args):
         vtop1, vtop5 = evaluate(data_loader_val, model, device)
         if misc.is_main_process():
             wandb.log({'epoch':epoch})
+    if misc.is_main_process():
+        wandb.log({'all_top1':vtop1})
+        wandb.log({'all_top5':vtop5})
     return vtop1, vtop5
 if __name__ == '__main__':
     args = get_args_parser()
@@ -320,5 +323,3 @@ if __name__ == '__main__':
         args.finetune = os.path.join(ckp_folder,ckp)
         args.ckp_name = ckp.split('-')[1].split('.')[0]
         vtop1, vtop5 = main(args)
-        wandb.log({'all_top1':vtop1})
-        wandb.log({'all_top5':vtop5})
