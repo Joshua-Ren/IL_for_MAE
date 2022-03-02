@@ -39,6 +39,10 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_vit
 from engine_finetune import train_one_epoch, evaluate
 
+FILE_LIST = ['start-0.pth','checkpoint-0.pth', 'checkpoint-5.pth', 'checkpoint-10.pth', 
+'checkpoint-15.pth', 'checkpoint-20.pth', 'checkpoint-25.pth', 'checkpoint-30.pth', 
+'checkpoint-35.pth', 'checkpoint-40.pth', 'checkpoint-45.pth', 'checkpoint-49.pth']
+
 
 def get_args_parser():
     parser = argparse.ArgumentParser('IN1K fine-tune', add_help=False)
@@ -230,13 +234,14 @@ def main(args):
     
     ckp_folder = base_folder + 'results/'+args.ft_folder
     
-    for ckp in os.listdir(ckp_folder):
+    for i in range(len(FILE_LIST)):
         model = models_vit.__dict__[args.model](
             num_classes=args.nb_classes,
             drop_path_rate=args.drop_path,
             global_pool=args.global_pool,)
+        ckp = FILE_LIST[i]
         ckp_path = os.path.join(ckp_folder,ckp)
-        args.ckp_name = ckp.split('-')[1].split('.')[0]
+        ckp_name = ckp.split('-')[1].split('.')[0]
             # ----- Load the checkpoint
         checkpoint = torch.load(ckp_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
