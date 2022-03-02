@@ -242,7 +242,6 @@ def main(args):
         ckp = FILE_LIST[i]
         ckp_path = os.path.join(ckp_folder,ckp)
         ckp_name = ckp.split('-')[1].split('.')[0]
-        wandb.log({'curr_epoch':int(ckp_name)})
             # ----- Load the checkpoint
         checkpoint = torch.load(ckp_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
@@ -281,7 +280,8 @@ def main(args):
             criterion = torch.nn.CrossEntropyLoss()
 
         print("criterion = %s" % str(criterion))
-
+        if misc.is_main_process():
+            wandb.log({'curr_epoch':int(ckp_name)})
         max_accuracy = 0.0
         for epoch in range(args.start_epoch, args.epochs):
             if args.distributed:
