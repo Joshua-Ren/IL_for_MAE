@@ -99,3 +99,4 @@ def evaluate(data_loader, model, device):
         wandb.log({'valid_loss':losses.avg})
         wandb.log({'valid_top1':top1.avg})
         wandb.log({'valid_top5':top5.avg})
+    return top1.avg, top5.avg
