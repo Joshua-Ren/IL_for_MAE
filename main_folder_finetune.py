@@ -39,10 +39,13 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_vit
 from engine_finetune import train_one_epoch, evaluate
 
-FILE_LIST = ['start-0.pth','checkpoint-0.pth', 'checkpoint-5.pth', 'checkpoint-10.pth', 
+FILE_LIST_DIS = ['start-0.pth','checkpoint-0.pth', 'checkpoint-5.pth', 'checkpoint-10.pth', 
 'checkpoint-15.pth', 'checkpoint-20.pth', 'checkpoint-25.pth', 'checkpoint-30.pth', 
 'checkpoint-35.pth', 'checkpoint-40.pth', 'checkpoint-45.pth', 'checkpoint-49.pth']
 
+FILE_LIST_INT = ['checkpoint-0.pth', 'checkpoint-10.pth', 'checkpoint-20.pth', 
+'checkpoint-30.pth', 'checkpoint-40.pth', 'checkpoint-50.pth', 'checkpoint-60.pth', 
+'checkpoint-70.pth', 'checkpoint-80.pth', 'checkpoint-89.pth']
 
 def get_args_parser():
     parser = argparse.ArgumentParser('IN1K fine-tune', add_help=False)
@@ -234,12 +237,12 @@ def main(args):
     
     ckp_folder = base_folder + 'results/'+args.ft_folder
     
-    for i in range(len(FILE_LIST)):
+    for i in range(len(FILE_LIST_INT)):
         model = models_vit.__dict__[args.model](
             num_classes=args.nb_classes,
             drop_path_rate=args.drop_path,
             global_pool=args.global_pool,)
-        ckp = FILE_LIST[i]
+        ckp = FILE_LIST_INT[i]
         ckp_path = os.path.join(ckp_folder,ckp)
         ckp_name = ckp.split('-')[1].split('.')[0]
             # ----- Load the checkpoint
