@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_folder_finetune.py --proj_name Finetune-Folder \
---run_name int400_cosmaskdis49_interact95 --batch_size 384 --dataset cifar100 --epochs 50 \
---ft_folder Interact_MAE/mae_vit_base_patch16_smallde/int400_maskdis49_int95_senlr
+--run_name int400_cosmaskdis49_interact95blr --batch_size 384 --dataset cifar100 --epochs 50 \
+--ft_folder Interact_MAE/mae_vit_base_patch16_smallde/int400_maskdis49_int95
