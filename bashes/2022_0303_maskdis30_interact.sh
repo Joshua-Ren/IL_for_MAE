@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_interact.py --proj_name Interact_MAE \
---run_name int400_maskdis20_int95_senlr --batch_size 384 --epochs 90 --de_epochs 5 --enlr_ratio 0.25\
+--run_name int400_maskdis20_int95_senlr --batch_size 384 --epochs 90 --de_epochs 5 --enlr_ratio 0.25 \
 --en_ckp Distill-IN1K/mae_vit_base_patch16_smallde/cos_mask/checkpoint-20.pth
