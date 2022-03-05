@@ -20,5 +20,5 @@ source /home/sg955/egg-env/bin/activate
 cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_finetune.py --proj_name Finetune-CIFAR \
---run_name FT_teacher50 --batch_size 384 --dataset cifar100 --epochs 50 \
---finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-399.pth
+--run_name FT_teacher50_offi160 --batch_size 384 --dataset cifar100 --epochs 50 \
+--finetune Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU160/checkpoint-159.pth
