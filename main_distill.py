@@ -217,7 +217,7 @@ def main(args):
     teacher.to(device)
     model_without_ddp = model
     
-    if stud_ckp is not None:
+    if args.stud_ckp is not None:
         ckp_path_stud = base_folder + 'results/' + args.stud_ckp
         checkpoint_stud = torch.load(ckp_path_stud, map_location='cpu')
         checkpoint_model_stud = checkpoint_stud['model']
