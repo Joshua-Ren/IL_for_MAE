@@ -21,4 +21,4 @@ cd /home/sg955/GitWS/IL_for_MAE/
 
 srun python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_folder_finetune.py --proj_name Finetune-Folder \
 --run_name int400_cosmaskSDE400BDE160 --batch_size 384 --dataset cifar100 --epochs 50 --dis_or_interact distill \
---ft_folder Interact_MAE/mae_vit_base_patch16_smallde/cos_mask_SDE400_BDE160
+--ft_folder Distill-IN1K/mae_vit_base_patch16_smallde/cos_mask_SDE400_BDE160
