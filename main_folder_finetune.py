@@ -119,6 +119,8 @@ def get_args_parser():
     # * Finetuning params
     parser.add_argument('--ft_folder', default='',
                         help='folder of the checkpoint')
+    parser.add_argument('--dis_or_interact', default='distill',
+                        help='decide which FILE_LIST to use')                        
     parser.add_argument('--global_pool', action='store_true')
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
@@ -237,12 +239,19 @@ def main(args):
     
     ckp_folder = base_folder + 'results/'+args.ft_folder
     
-    for i in range(len(FILE_LIST_INT)):
+    if args.dis_or_interact=='distill':
+        FILE_LIST = FILE_LIST_DIS
+    elif args.dis_or_interact=='interact':
+        FILE_LIST = FILE_LIST_INT
+    else:
+        FILE_LIST = FILE_LIST_DIS
+        
+    for i in range(len(FILE_LIST)):
         model = models_vit.__dict__[args.model](
             num_classes=args.nb_classes,
             drop_path_rate=args.drop_path,
             global_pool=args.global_pool,)
-        ckp = FILE_LIST_INT[i]
+        ckp = FILE_LIST[i]
         ckp_path = os.path.join(ckp_folder,ckp)
         ckp_name = ckp.split('-')[1].split('.')[0]
             # ----- Load the checkpoint
