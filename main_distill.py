@@ -99,6 +99,8 @@ def get_args_parser():
     # * Finetuning params
     parser.add_argument('--teach_ckp', default='',
                         help='teacher from checkpoint')
+    parser.add_argument('--stud_ckp', default='',
+                        help='student from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
@@ -214,12 +216,17 @@ def main(args):
     model.to(device)
     teacher.to(device)
     model_without_ddp = model
+    
+    if stud_ckp is not None:
+        ckp_path_stud = base_folder + 'results/' + args.stud_ckp
+        checkpoint_stud = torch.load(ckp_path_stud, map_location='cpu')
+        checkpoint_model_stud = checkpoint_stud['model']
+        msg_stud = model.load_state_dict(checkpoint_model_stud, strict=False)
             # ----- Load teacher from the checkpoint
     ckp_path = base_folder + 'results/' + args.teach_ckp
-    #ckp_path = base_folder+'results/Interact_MAE/mae_vit_base_patch16_smallde/offi_4GPU_smallDE400/checkpoint-300.pth'
     checkpoint = torch.load(ckp_path, map_location='cpu')
     checkpoint_model = checkpoint['model']
-    state_dict = teacher.state_dict()
+    #state_dict = teacher.state_dict()
     # load pre-trained model
     msg = teacher.load_state_dict(checkpoint_model, strict=False)
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
