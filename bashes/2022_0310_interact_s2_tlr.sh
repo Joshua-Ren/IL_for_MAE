@@ -21,4 +21,4 @@ cd /home/sg955/GitWS/IL_for_MAE/
 
 python -m torch.distributed.launch --nproc_per_node=4 --master_port 1086 main_interact.py --proj_name Interact_MAE \
 --run_name cosmask_t2s2_ep15_tinylr --batch_size 384 --epochs 90 --de_epochs 5 --enlr_ratio 0.5 --blr 1e-4 \
---en_ckp Distill-IN1K/mae_vit_base_patch16_smallde/cosmask_t2s2_distill/checkpoint-15.pth
+--en_ckp Distill-IN1K/mae_vit_base_patch16_smallde/cosmask_t2s2/checkpoint-15.pth
